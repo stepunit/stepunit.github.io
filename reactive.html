@@ -235,9 +235,18 @@
                 moved: false
             };
             
+            // Touch tracking variables
+            const touch = {
+                startX: 0,
+                startY: 0,
+                isDragging: false,
+                rotationY: 0
+            };
+            
             // Device orientation variables
             let deviceOrientationEnabled = false;
-            let gamma = 0; // Only using gamma for horizontal rotation
+            let filteredGamma = 0;
+            const filterFactor = 0.1; // Lower = smoother but more lag
             
             // Handle iOS permission for DeviceOrientation
             const enableMotionBtn = document.getElementById('enable-motion');
@@ -265,6 +274,11 @@
                     window.addEventListener('deviceorientation', handleDeviceOrientation);
                     deviceOrientationEnabled = true;
                 }
+                
+                // Add touch event listeners for mobile
+                container.addEventListener('touchstart', handleTouchStart, false);
+                container.addEventListener('touchmove', handleTouchMove, false);
+                container.addEventListener('touchend', handleTouchEnd, false);
             } else {
                 // Desktop device - use mouse controls
                 document.addEventListener('mousemove', (event) => {
@@ -274,13 +288,48 @@
                 });
             }
             
-            // Handle device orientation event - only use gamma for horizontal rotation
+            // Handle device orientation event - apply low-pass filter for smoother motion
             function handleDeviceOrientation(event) {
                 // Extract only gamma (left-right tilt) for horizontal rotation
-                gamma = event.gamma * (Math.PI/180);
+                const rawGamma = event.gamma * (Math.PI/180);
+                
+                // Apply low-pass filter
+                filteredGamma = filteredGamma * (1 - filterFactor) + rawGamma * filterFactor;
             }
             
-            // Create speaker cabinet
+            // Touch event handlers
+            function handleTouchStart(event) {
+                const touch = event.touches[0];
+                touch.startX = touch.clientX;
+                touch.isDragging = true;
+                
+                // Temporarily disable device orientation while dragging
+                deviceOrientationEnabled = false;
+            }
+            
+            function handleTouchMove(event) {
+                if (!touch.isDragging) return;
+                
+                const currentX = event.touches[0].clientX;
+                const deltaX = currentX - touch.startX;
+                
+                // Update rotation based on touch movement
+                touch.rotationY += deltaX * 0.01;
+                
+                // Reset start position for next move event
+                touch.startX = currentX;
+            }
+            
+            function handleTouchEnd() {
+                touch.isDragging = false;
+                
+                // Re-enable device orientation after dragging
+                if (typeof DeviceOrientationEvent !== 'undefined') {
+                    deviceOrientationEnabled = true;
+                }
+            }
+            
+            // Create speaker cabinet based on the image
             const speakerGroup = new THREE.Group();
             scene.add(speakerGroup);
             
@@ -293,26 +342,26 @@
             const cabinet = new THREE.Mesh(cabinetGeometry, cabinetMaterial);
             speakerGroup.add(cabinet);
             
-            // Create horn waveguide
+            // Create horn waveguide section (upper part)
             const hornGroup = new THREE.Group();
             hornGroup.position.y = 9;
             hornGroup.position.z = 7.5;
             speakerGroup.add(hornGroup);
             
-            // Horn outer frame
+            // Horn outer frame - white frame as in the image
             const hornFrameGeometry = new THREE.BoxGeometry(18, 18, 1);
             const hornFrameMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0xCCCCCC,
+                color: 0xFFFFFF,
                 wireframe: true
             });
             const hornFrame = new THREE.Mesh(hornFrameGeometry, hornFrameMaterial);
             hornGroup.add(hornFrame);
             
-            // Create angled panels for horn
+            // Create angled panels for horn - matching the image
             const createHornPanel = (width, height, posX, posY, posZ, rotX, rotY, rotZ) => {
                 const panelGeometry = new THREE.PlaneGeometry(width, height);
                 const panelMaterial = new THREE.MeshBasicMaterial({ 
-                    color: 0xAAAAAA,
+                    color: 0xEEEEEE,
                     wireframe: true,
                     side: THREE.DoubleSide
                 });
@@ -403,14 +452,14 @@
             const animate = () => {
                 requestAnimationFrame(animate);
                 
-                // Device orientation controls for mobile - only use gamma for horizontal rotation
-                if (isMobile && deviceOrientationEnabled) {
-                    // Only apply gamma rotation (horizontal/Y-axis)
-                    speakerGroup.rotation.y = gamma * 0.5;
-                    
-                    // Keep other rotations fixed
-                    speakerGroup.rotation.x = 0;
-                    speakerGroup.rotation.z = 0;
+                // Handle rotation based on input method
+                if (touch.isDragging) {
+                    // Use touch rotation when dragging
+                    speakerGroup.rotation.y = touch.rotationY;
+                } else if (isMobile && deviceOrientationEnabled) {
+                    // Use device orientation with smooth interpolation
+                    const targetRotationY = filteredGamma * 0.3; // Reduced multiplier for slower movement
+                    speakerGroup.rotation.y += (targetRotationY - speakerGroup.rotation.y) * 0.1; // Smooth transition
                 } else {
                     // Mouse controls for desktop
                     // Smooth mouse movement
@@ -442,9 +491,12 @@
                             
                             // Wave amplitude affected by device orientation or mouse position
                             let amplitude;
-                            if (isMobile && deviceOrientationEnabled) {
+                            if (touch.isDragging) {
+                                // Use touch movement for amplitude
+                                amplitude = 2 * (1 + Math.abs(touch.rotationY) * 0.5);
+                            } else if (isMobile && deviceOrientationEnabled) {
                                 // Use gamma for amplitude on mobile
-                                amplitude = 2 * (1 + Math.abs(gamma/Math.PI));
+                                amplitude = 2 * (1 + Math.abs(filteredGamma/Math.PI));
                             } else {
                                 // Use mouse for amplitude on desktop
                                 const mouseInfluence = mouse.moved ? Math.abs(mouse.x) + Math.abs(mouse.y) : 1;
@@ -464,11 +516,14 @@
                             
                             // Scale based on distance from center
                             const scaleFactor = 1 - (distance / (gridSize/2)) * 0.5;
-                            let scaleInfluence;
+                            let scaleInfluence = 1;
                             
-                            if (isMobile && deviceOrientationEnabled) {
+                            if (touch.isDragging) {
+                                // Use touch movement for scale
+                                scaleInfluence = 1 + (Math.abs(touch.rotationY) * 0.3);
+                            } else if (isMobile && deviceOrientationEnabled) {
                                 // Use gamma for scale influence on mobile
-                                scaleInfluence = 1 + (Math.abs(gamma/Math.PI) * 0.5);
+                                scaleInfluence = 1 + (Math.abs(filteredGamma/Math.PI) * 0.3);
                             } else {
                                 // Use mouse for scale influence on desktop
                                 scaleInfluence = mouse.moved ? 1 + (Math.abs(mouse.x) * 0.5) : 1;
