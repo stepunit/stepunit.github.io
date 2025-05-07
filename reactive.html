@@ -237,7 +237,7 @@
             
             // Device orientation variables
             let deviceOrientationEnabled = false;
-            let alpha = 0, beta = 0, gamma = 0;
+            let gamma = 0; // Only using gamma for horizontal rotation
             
             // Handle iOS permission for DeviceOrientation
             const enableMotionBtn = document.getElementById('enable-motion');
@@ -274,19 +274,10 @@
                 });
             }
             
-            // Handle device orientation event
+            // Handle device orientation event - only use gamma for horizontal rotation
             function handleDeviceOrientation(event) {
-                // For iOS
-                if (event.webkitCompassHeading) {
-                    alpha = event.webkitCompassHeading * (Math.PI/180);
-                    beta = event.beta * (Math.PI/180);
-                    gamma = event.gamma * (Math.PI/180);
-                } else {
-                    // For Android
-                    alpha = event.alpha * (Math.PI/180);
-                    beta = event.beta * (Math.PI/180);
-                    gamma = event.gamma * (Math.PI/180);
-                }
+                // Extract only gamma (left-right tilt) for horizontal rotation
+                gamma = event.gamma * (Math.PI/180);
             }
             
             // Create speaker cabinet
@@ -412,15 +403,14 @@
             const animate = () => {
                 requestAnimationFrame(animate);
                 
-                // Device orientation controls for mobile
+                // Device orientation controls for mobile - only use gamma for horizontal rotation
                 if (isMobile && deviceOrientationEnabled) {
-                    // Create a quaternion from Euler angles
-                    const euler = new THREE.Euler(beta, alpha, -gamma, 'YXZ');
-                    const deviceQuaternion = new THREE.Quaternion();
-                    deviceQuaternion.setFromEuler(euler);
+                    // Only apply gamma rotation (horizontal/Y-axis)
+                    speakerGroup.rotation.y = gamma * 0.5;
                     
-                    // Apply rotation to speaker group
-                    speakerGroup.quaternion.slerp(deviceQuaternion, 0.1);
+                    // Keep other rotations fixed
+                    speakerGroup.rotation.x = 0;
+                    speakerGroup.rotation.z = 0;
                 } else {
                     // Mouse controls for desktop
                     // Smooth mouse movement
@@ -453,8 +443,8 @@
                             // Wave amplitude affected by device orientation or mouse position
                             let amplitude;
                             if (isMobile && deviceOrientationEnabled) {
-                                // Use beta and gamma for amplitude on mobile
-                                amplitude = 2 * (1 + Math.abs(beta/Math.PI) + Math.abs(gamma/Math.PI));
+                                // Use gamma for amplitude on mobile
+                                amplitude = 2 * (1 + Math.abs(gamma/Math.PI));
                             } else {
                                 // Use mouse for amplitude on desktop
                                 const mouseInfluence = mouse.moved ? Math.abs(mouse.x) + Math.abs(mouse.y) : 1;
@@ -477,8 +467,8 @@
                             let scaleInfluence;
                             
                             if (isMobile && deviceOrientationEnabled) {
-                                // Use beta for scale influence on mobile
-                                scaleInfluence = 1 + (Math.abs(beta/Math.PI) * 0.5);
+                                // Use gamma for scale influence on mobile
+                                scaleInfluence = 1 + (Math.abs(gamma/Math.PI) * 0.5);
                             } else {
                                 // Use mouse for scale influence on desktop
                                 scaleInfluence = mouse.moved ? 1 + (Math.abs(mouse.x) * 0.5) : 1;
