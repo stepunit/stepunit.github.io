@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Step Unit – Underground Clubbing</title>
+    <meta
+      name="description"
+      content="Step Unit porta il clubbing underground in spazi non convenzionali."
+    />
+
+    <!-- Performance: preconnect + font -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --fg: #ffffff;
+        --red: #ff205c;
+        --cyan: #2df9ff;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "Inter", system-ui, sans-serif;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      /* TITLE + RGB PARALLAX */
+      .title {
+        font-size: clamp(3rem, 10vw, 8rem);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        position: relative;
+        user-select: none;
+      }
+
+      .layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+      }
+
+      .layer.base {
+        position: relative;
+        color: var(--fg);
+      }
+
+      .layer.r {
+        color: var(--red);
+        mix-blend-mode: screen;
+      }
+
+      .layer.b {
+        color: var(--cyan);
+        mix-blend-mode: screen;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .layer.r,
+        .layer.b {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="title glitch" aria-label="Step Unit">
+      <span class="layer base">STEP&nbsp;UNIT</span>
+      <span aria-hidden="true" class="layer r">STEP&nbsp;UNIT</span>
+      <span aria-hidden="true" class="layer b">STEP&nbsp;UNIT</span>
+    </h1>
+
+    <script type="module">
+      (() => {
+        const rLayer = document.querySelector(".layer.r");
+        const bLayer = document.querySelector(".layer.b");
+        if (!rLayer || !bLayer) return;
+
+        let mouseX = 0,
+          mouseY = 0;
+        const strength = 15; // massimo offset px
+
+        const onPointerMove = (e) => {
+          const { innerWidth: w, innerHeight: h } = window;
+          // normalizza a -0.5 … 0.5
+          const xRatio = e.clientX / w - 0.5;
+          const yRatio = e.clientY / h - 0.5;
+          mouseX = xRatio * strength;
+          mouseY = yRatio * strength;
+        };
+
+        window.addEventListener("pointermove", onPointerMove, {
+          passive: true,
+        });
+
+        const applyTransform = () => {
+          rLayer.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+          bLayer.style.transform = `translate3d(${-mouseX}px, ${-mouseY}px, 0)`;
+          requestAnimationFrame(applyTransform);
+        };
+        requestAnimationFrame(applyTransform);
+      })();
+    </script>
+  </body>
+</html>
