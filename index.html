@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Step Unit – Underground Clubbing</title>
+  <meta name="description" content="Step Unit porta il clubbing underground in spazi non convenzionali. Scopri il prossimo evento e unisciti alla community." />
+
+  <!-- Performance: preconnect to font domains -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Oswald:wght@500&display=swap" rel="stylesheet" />
+
+  <!-- Security: strict CSP for GitHub Pages (adjust domains if you self‑host fonts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; img-src 'self';" />
+
+  <style>
+    /* === CSS RESET (mini) === */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;line-height:1.5;background:#0d0d0d;color:#f5f5f5;-webkit-font-smoothing:antialiased}
+
+    /* === LAYOUT === */
+    #hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 1.25rem}
+    #about{padding:4rem 1.25rem;max-width:46rem;margin-inline:auto}
+    footer{padding:2rem 0;text-align:center;font-size:.875rem;background:#111}
+
+    /* === TYPO === */
+    h1{font-family:'Oswald',sans-serif;font-size:clamp(3rem,8vw,6rem);letter-spacing:.05em;position:relative}
+    p{margin-top:1rem;font-size:1.125rem;max-width:32rem}
+
+    /* === BUTTON === */
+    .cta{display:inline-block;margin-top:2rem;padding:.85rem 2.25rem;border:2px solid #f5f5f5;border-radius:0.25rem;font-weight:700;text-decoration:none;color:#f5f5f5;transition:background .25s, color .25s}
+    .cta:hover,.cta:focus{background:#f5f5f5;color:#0d0d0d}
+
+    /* === GLITCH EFFECT === */
+    .glitch{position:relative;color:#fff}
+    .glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;clip-path:var(--clip);}
+    .glitch::before{left:2px;text-shadow:-2px 0 #ff00c1}
+    .glitch::after{left:-2px;text-shadow:-2px 0 #00eaff}
+
+    /* Keyframes generate noise slices */
+    @keyframes glitch-anim{0%{--clip:inset(10% 0 85% 0)}
+      2%{--clip:inset(40% 0 42% 0)}
+      4%{--clip:inset(80% 0 5% 0)}
+      6%{--clip:inset(20% 0 65% 0)}
+      8%{--clip:inset(70% 0 12% 0)}
+      10%{--clip:inset(5% 0 80% 0)}
+      12%,100%{--clip:inset(0 0 0 0)}}
+
+    .glitch-active::before,.glitch-active::after{animation:glitch-anim 0.35s steps(1,end) forwards}
+  </style>
+</head>
+<body>
+  <main id="hero">
+    <h1 class="glitch" data-text="STEP UNIT">STEP UNIT</h1>
+    <p>Underground clubbing fuori dagli schemi.</p>
+    <a href="#about" class="cta" aria-label="Scopri di più su Step Unit">Scopri di più</a>
+  </main>
+
+  <section id="about">
+    <h2>La Nostra Visione</h2>
+    <p>Step Unit nasce per portare sonorità elettroniche raw e autentiche in luoghi inattesi, creando community e cultura oltre i confini del club tradizionale. Segui i nostri canali per scoprire il prossimo evento e far parte del cambiamento.</p>
+  </section>
+
+  <footer>
+    © <span id="year"></span> Step Unit • Built with <a href="https://pages.github.com/" rel="noopener" target="_blank">GitHub Pages</a>
+  </footer>
+
+  <!-- Glitch JS (lightweight, no external deps) -->
+  <script defer type="module">
+    // Replace Date automatically
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Glitch logic: add class randomly for performance efficiency
+    const glitchEl = document.querySelector('.glitch');
+    const minDelay = 1500; // ms
+    const maxDelay = 3500;
+
+    function triggerGlitch(){
+      glitchEl.classList.add('glitch-active');
+      setTimeout(()=>glitchEl.classList.remove('glitch-active'),350);
+      const next = Math.random()*(maxDelay-minDelay)+minDelay;
+      setTimeout(triggerGlitch,next);
+    }
+    // Start after initial load
+    window.addEventListener('load',()=>{
+      setTimeout(triggerGlitch,1000);
+    });
+  </script>
+</body>
+</html>
