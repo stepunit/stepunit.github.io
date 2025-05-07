@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="description" content="STEP UNIT - Underground Music Collective based in Milan, Italy. Events, brand launches, and activations.">
+    <title>STEP UNIT | Milan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #0c0c0c; color: #aaa; line-height: 1.6; overflow-x: hidden;">
+    
+    <!-- Three.js Canvas -->
+    <div id="wave-canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 0;"></div>
+    
+    <!-- Permission Button for iOS -->
+    <button id="enable-motion" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background-color: #2A2A4A; color: #fff; border: none; padding: 15px 30px; font-family: 'Space Mono', monospace; display: none; cursor: pointer;">Enable Motion Controls</button>
+    
+    <!-- Navigation -->
+    <nav style="padding: 1.5rem 5%; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 90%; z-index: 100; mix-blend-mode: difference;">
+        <div style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 400; letter-spacing: -1px;">
+            STEP_UNIT
+        </div>
+        <div style="display: flex; gap: 2rem;">
+            <a href="#about" style="color: #aaa; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.5px; font-family: 'Space Mono', monospace;">about</a>
+            <a href="#events" style="color: #aaa; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.5px; font-family: 'Space Mono', monospace;">events</a>
+            <a href="#contact" style="color: #aaa; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.5px; font-family: 'Space Mono', monospace;">contact</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 5%; position: relative;">
+        <div style="max-width: 800px; position: relative; z-index: 2;">
+            <h1 style="font-size: 2rem; margin-bottom: 1rem; font-weight: 400; font-family: 'Space Mono', monospace; letter-spacing: -1px;">
+                STEP_UNIT
+            </h1>
+            <p style="font-size: 0.9rem; margin-bottom: 2rem; font-weight: 300; max-width: 500px; color: #666;">
+                Underground music collective / Milan
+            </p>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="width: 30px; height: 1px; background-color: #444;"></div>
+                <span style="font-size: 0.8rem; color: #444; font-family: 'Space Mono', monospace;">est. 2023</span>
+            </div>
+        </div>
+        <div style="position: absolute; bottom: 2rem; left: 5%; font-size: 0.8rem; color: #444; font-family: 'Space Mono', monospace; z-index: 2;">
+            scroll
+        </div>
+    </header>
+
+    <!-- About Section -->
+    <section id="about" style="padding: 6rem 5%; background-color: #0c0c0c; position: relative; z-index: 2;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <div style="display: flex; flex-wrap: wrap; gap: 4rem; justify-content: space-between;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h2 style="font-size: 1rem; margin-bottom: 2rem; font-weight: 400; color: #666; font-family: 'Space Mono', monospace;">
+                        About
+                    </h2>
+                    <p style="font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.8; color: #888; font-weight: 300;">
+                        Step Unit is a Milan-based underground music collective dedicated to creating immersive experiences through sound, visuals, and space.
+                    </p>
+                    <p style="font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.8; color: #888; font-weight: 300;">
+                        We curate events that push boundaries and connect artists with audiences in unique environments, from warehouse parties to brand activations.
+                    </p>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <p style="font-size: 0.9rem; line-height: 1.8; color: #888; font-weight: 300; margin-top: 3rem;">
+                        Our mission is to foster a community that celebrates creative expression and cultural innovation in Milan's vibrant underground scene.
+                    </p>
+                    <div style="margin-top: 3rem; display: flex; gap: 1rem; align-items: center;">
+                        <div style="width: 30px; height: 1px; background-color: #444;"></div>
+                        <span style="font-size: 0.8rem; color: #444; font-family: 'Space Mono', monospace;">sound / space / community</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section id="events" style="padding: 6rem 5%; background-color: #0a0a0a; position: relative; z-index: 2;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <h2 style="font-size: 1rem; margin-bottom: 3rem; font-weight: 400; color: #666; font-family: 'Space Mono', monospace;">
+                Events
+            </h2>
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Event 1 -->
+                <div style="border-top: 1px solid #222; padding-top: 1.5rem; padding-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">25.05.2025</div>
+                        <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.2rem; font-weight: 400; font-family: 'Space Mono', monospace;">Bassline Frequencies</h3>
+                        <p style="margin-bottom: 0; color: #666; font-size: 0.8rem;">Underground warehouse, Milan</p>
+                    </div>
+                    <div style="flex: 2; min-width: 300px;">
+                        <p style="margin-top: 0; margin-bottom: 1rem; font-size: 0.9rem; color: #888; font-weight: 300;">
+                            A night of deep bass music featuring international DJs and immersive visual installations.
+                        </p>
+                        <a href="#" style="display: inline-block; color: #aaa; text-decoration: none; font-size: 0.8rem; font-family: 'Space Mono', monospace;">details →</a>
+                    </div>
+                </div>
+                
+                <!-- Event 2 -->
+                <div style="border-top: 1px solid #222; padding-top: 1.5rem; padding-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">12.06.2025</div>
+                        <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.2rem; font-weight: 400; font-family: 'Space Mono', monospace;">Techno Collective</h3>
+                        <p style="margin-bottom: 0; color: #666; font-size: 0.8rem;">Navigli District, Milan</p>
+                    </div>
+                    <div style="flex: 2; min-width: 300px;">
+                        <p style="margin-top: 0; margin-bottom: 1rem; font-size: 0.9rem; color: #888; font-weight: 300;">
+                            An all-night journey through techno's various expressions with local and international artists.
+                        </p>
+                        <a href="#" style="display: inline-block; color: #aaa; text-decoration: none; font-size: 0.8rem; font-family: 'Space Mono', monospace;">details →</a>
+                    </div>
+                </div>
+                
+                <!-- Event 3 -->
+                <div style="border-top: 1px solid #222; padding-top: 1.5rem; padding-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">08.07.2025</div>
+                        <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.2rem; font-weight: 400; font-family: 'Space Mono', monospace;">Fashion Sound System</h3>
+                        <p style="margin-bottom: 0; color: #666; font-size: 0.8rem;">Secret Location, Milan</p>
+                    </div>
+                    <div style="flex: 2; min-width: 300px;">
+                        <p style="margin-top: 0; margin-bottom: 1rem; font-size: 0.9rem; color: #888; font-weight: 300;">
+                            A collaborative event with emerging fashion designers featuring exclusive performances.
+                        </p>
+                        <a href="#" style="display: inline-block; color: #aaa; text-decoration: none; font-size: 0.8rem; font-family: 'Space Mono', monospace;">details →</a>
+                    </div>
+                </div>
+                
+                <div style="border-top: 1px solid #222; padding-top: 2rem; margin-top: 1rem;">
+                    <a href="#" style="display: inline-block; color: #aaa; text-decoration: none; font-size: 0.8rem; font-family: 'Space Mono', monospace;">view all events →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" style="padding: 6rem 5%; background-color: #0c0c0c; position: relative; z-index: 2;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <h2 style="font-size: 1rem; margin-bottom: 3rem; font-weight: 400; color: #666; font-family: 'Space Mono', monospace;">
+                Contact
+            </h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 4rem; justify-content: space-between;">
+                <div style="flex: 1; min-width: 300px;">
+                    <p style="font-size: 0.9rem; margin-bottom: 2rem; line-height: 1.8; color: #888; font-weight: 300;">
+                        Interested in collaborating or attending our next event? Reach out to us.
+                    </p>
+                    <div style="margin-bottom: 2rem;">
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">Email</div>
+                        <a href="mailto:info@stepunit.com" style="color: #aaa; text-decoration: none; font-size: 0.9rem;">info@stepunit.com</a>
+                    </div>
+                    <div>
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">Follow</div>
+                        <div style="display: flex; gap: 1.5rem;">
+                            <a href="#" style="color: #aaa; text-decoration: none; font-size: 0.9rem;">Instagram</a>
+                            <a href="#" style="color: #aaa; text-decoration: none; font-size: 0.9rem;">SoundCloud</a>
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <form style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div>
+                            <label for="name" style="display: block; font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">Name</label>
+                            <input type="text" id="name" style="width: 100%; padding: 0.8rem 0; background-color: transparent; border: none; border-bottom: 1px solid #222; color: #aaa; font-family: 'Inter', sans-serif; font-size: 0.9rem;">
+                        </div>
+                        <div>
+                            <label for="email" style="display: block; font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">Email</label>
+                            <input type="email" id="email" style="width: 100%; padding: 0.8rem 0; background-color: transparent; border: none; border-bottom: 1px solid #222; color: #aaa; font-family: 'Inter', sans-serif; font-size: 0.9rem;">
+                        </div>
+                        <div>
+                            <label for="message" style="display: block; font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444; margin-bottom: 0.5rem;">Message</label>
+                            <textarea id="message" rows="4" style="width: 100%; padding: 0.8rem 0; background-color: transparent; border: none; border-bottom: 1px solid #222; color: #aaa; font-family: 'Inter', sans-serif; font-size: 0.9rem; resize: vertical;"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit" style="margin-top: 1rem; padding: 0.8rem 2rem; background-color: transparent; color: #aaa; border: 1px solid #333; font-family: 'Space Mono', monospace; font-size: 0.8rem; cursor: pointer;">Send</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="padding: 3rem 5%; background-color: #0c0c0c; border-top: 1px solid #1a1a1a; position: relative; z-index: 2;">
+        <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444;">
+                © 2025 STEP_UNIT
+            </div>
+            <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #444;">
+                Milan, Italy
+            </div>
+        </div>
+    </footer>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Speaker with Voxel Wave Animation -->
+    <script>
+        // Wait for Three.js to load
+        window.addEventListener('load', function() {
+            if (typeof THREE === 'undefined') {
+                console.error('Three.js failed to load');
+                return;
+            }
+            
+            // Check if device is mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Initialize Three.js Scene
+            const container = document.getElementById('wave-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x0c0c0c, 1);
+            container.appendChild(renderer.domElement);
+            
+            // Camera position
+            camera.position.z = 40;
+            camera.position.y = 0;
+            camera.lookAt(0, 0, 0);
+            
+            // Mouse tracking for desktop
+            const mouse = {
+                x: 0,
+                y: 0,
+                targetX: 0,
+                targetY: 0,
+                moved: false
+            };
+            
+            // Device orientation variables
+            let deviceOrientationEnabled = false;
+            let alpha = 0, beta = 0, gamma = 0;
+            
+            // Handle iOS permission for DeviceOrientation
+            const enableMotionBtn = document.getElementById('enable-motion');
+            
+            if (isMobile) {
+                // Check if DeviceOrientationEvent is available and if permission is needed (iOS 13+)
+                if (typeof DeviceOrientationEvent !== 'undefined' && 
+                    typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // iOS 13+ device
+                    enableMotionBtn.style.display = 'block';
+                    
+                    enableMotionBtn.addEventListener('click', function() {
+                        DeviceOrientationEvent.requestPermission()
+                            .then(response => {
+                                if (response === 'granted') {
+                                    enableMotionBtn.style.display = 'none';
+                                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+                                    deviceOrientationEnabled = true;
+                                }
+                            })
+                            .catch(console.error);
+                    });
+                } else {
+                    // Non-iOS device or iOS < 13, no permission needed
+                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+                    deviceOrientationEnabled = true;
+                }
+            } else {
+                // Desktop device - use mouse controls
+                document.addEventListener('mousemove', (event) => {
+                    mouse.targetX = (event.clientX / window.innerWidth) * 2 - 1;
+                    mouse.targetY = -(event.clientY / window.innerHeight) * 2 + 1;
+                    mouse.moved = true;
+                });
+            }
+            
+            // Handle device orientation event
+            function handleDeviceOrientation(event) {
+                // For iOS
+                if (event.webkitCompassHeading) {
+                    alpha = event.webkitCompassHeading * (Math.PI/180);
+                    beta = event.beta * (Math.PI/180);
+                    gamma = event.gamma * (Math.PI/180);
+                } else {
+                    // For Android
+                    alpha = event.alpha * (Math.PI/180);
+                    beta = event.beta * (Math.PI/180);
+                    gamma = event.gamma * (Math.PI/180);
+                }
+            }
+            
+            // Create speaker cabinet
+            const speakerGroup = new THREE.Group();
+            scene.add(speakerGroup);
+            
+            // Main cabinet - dark blue/purple exterior
+            const cabinetGeometry = new THREE.BoxGeometry(20, 36, 15);
+            const cabinetMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x2A2A4A,
+                wireframe: true
+            });
+            const cabinet = new THREE.Mesh(cabinetGeometry, cabinetMaterial);
+            speakerGroup.add(cabinet);
+            
+            // Create horn waveguide
+            const hornGroup = new THREE.Group();
+            hornGroup.position.y = 9;
+            hornGroup.position.z = 7.5;
+            speakerGroup.add(hornGroup);
+            
+            // Horn outer frame
+            const hornFrameGeometry = new THREE.BoxGeometry(18, 18, 1);
+            const hornFrameMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xCCCCCC,
+                wireframe: true
+            });
+            const hornFrame = new THREE.Mesh(hornFrameGeometry, hornFrameMaterial);
+            hornGroup.add(hornFrame);
+            
+            // Create angled panels for horn
+            const createHornPanel = (width, height, posX, posY, posZ, rotX, rotY, rotZ) => {
+                const panelGeometry = new THREE.PlaneGeometry(width, height);
+                const panelMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xAAAAAA,
+                    wireframe: true,
+                    side: THREE.DoubleSide
+                });
+                const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+                panel.position.set(posX, posY, posZ);
+                panel.rotation.set(rotX, rotY, rotZ);
+                return panel;
+            };
+            
+            // Top panel
+            hornGroup.add(createHornPanel(16, 8, 0, 4, -2, Math.PI / 4, 0, 0));
+            
+            // Bottom panel
+            hornGroup.add(createHornPanel(16, 8, 0, -4, -2, -Math.PI / 4, 0, 0));
+            
+            // Left panel
+            hornGroup.add(createHornPanel(8, 16, -4, 0, -2, 0, Math.PI / 4, 0));
+            
+            // Right panel
+            hornGroup.add(createHornPanel(8, 16, 4, 0, -2, 0, -Math.PI / 4, 0));
+            
+            // Center panel (back)
+            hornGroup.add(createHornPanel(8, 8, 0, 0, -4, 0, 0, 0));
+            
+            // Lower woofer section
+            const wooferGroup = new THREE.Group();
+            wooferGroup.position.y = -9;
+            wooferGroup.position.z = 7.5;
+            speakerGroup.add(wooferGroup);
+            
+            // Woofer frame
+            const wooferFrameGeometry = new THREE.BoxGeometry(18, 18, 1);
+            const wooferFrameMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x2A2A4A,
+                wireframe: true
+            });
+            const wooferFrame = new THREE.Mesh(wooferFrameGeometry, wooferFrameMaterial);
+            wooferGroup.add(wooferFrame);
+            
+            // Create voxel grid for the waveform inside the woofer
+            const gridSize = 16;
+            const spacing = 0.4;
+            const voxelSize = 0.2;
+            
+            // Create instanced mesh for performance
+            const boxGeometry = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+            const voxelMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x888888,
+                wireframe: true
+            });
+            
+            // Create instance mesh for woofer voxels
+            const instanceCount = Math.PI * gridSize * gridSize / 4; // Approximate number of voxels in a circle
+            const instancedMesh = new THREE.InstancedMesh(boxGeometry, voxelMaterial, instanceCount);
+            instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            instancedMesh.position.z = 0.6;
+            wooferGroup.add(instancedMesh);
+            
+            // Matrix for transformations
+            const matrix = new THREE.Matrix4();
+            const position = new THREE.Vector3();
+            const quaternion = new THREE.Quaternion();
+            const scale = new THREE.Vector3(1, 1, 1);
+            
+            // Initial positioning of instances in a circular pattern
+            let index = 0;
+            const radius = gridSize * spacing / 2;
+            
+            for (let x = -gridSize/2; x < gridSize/2; x++) {
+                for (let y = -gridSize/2; y < gridSize/2; y++) {
+                    const distance = Math.sqrt(x*x + y*y);
+                    if (distance <= gridSize/2) { // Only place voxels within a circle
+                        position.x = x * spacing;
+                        position.y = y * spacing;
+                        position.z = 0;
+                        
+                        matrix.compose(position, quaternion, scale);
+                        instancedMesh.setMatrixAt(index, matrix);
+                        index++;
+                    }
+                }
+            }
+            
+            instancedMesh.count = index; // Update the count to match actual number of voxels
+            instancedMesh.instanceMatrix.needsUpdate = true;
+            
+            // Animation
+            const animate = () => {
+                requestAnimationFrame(animate);
+                
+                // Device orientation controls for mobile
+                if (isMobile && deviceOrientationEnabled) {
+                    // Create a quaternion from Euler angles
+                    const euler = new THREE.Euler(beta, alpha, -gamma, 'YXZ');
+                    const deviceQuaternion = new THREE.Quaternion();
+                    deviceQuaternion.setFromEuler(euler);
+                    
+                    // Apply rotation to speaker group
+                    speakerGroup.quaternion.slerp(deviceQuaternion, 0.1);
+                } else {
+                    // Mouse controls for desktop
+                    // Smooth mouse movement
+                    mouse.x += (mouse.targetX - mouse.x) * 0.05;
+                    mouse.y += (mouse.targetY - mouse.y) * 0.05;
+                    
+                    // Rotate speaker based on mouse position if mouse has moved
+                    if (mouse.moved) {
+                        speakerGroup.rotation.y = mouse.x * 0.5;
+                        speakerGroup.rotation.x = mouse.y * 0.3;
+                    } else {
+                        // Default gentle rotation if no mouse movement
+                        const time = Date.now() * 0.0005;
+                        speakerGroup.rotation.y = Math.sin(time) * 0.3;
+                    }
+                }
+                
+                const time = Date.now() * 0.001;
+                
+                // Update each voxel position
+                let index = 0;
+                for (let x = -gridSize/2; x < gridSize/2; x++) {
+                    for (let y = -gridSize/2; y < gridSize/2; y++) {
+                        const distance = Math.sqrt(x*x + y*y);
+                        if (distance <= gridSize/2 && index < instancedMesh.count) { // Only animate voxels within a circle
+                            // Get the current matrix
+                            instancedMesh.getMatrixAt(index, matrix);
+                            matrix.decompose(position, quaternion, scale);
+                            
+                            // Wave amplitude affected by device orientation or mouse position
+                            let amplitude;
+                            if (isMobile && deviceOrientationEnabled) {
+                                // Use beta and gamma for amplitude on mobile
+                                amplitude = 2 * (1 + Math.abs(beta/Math.PI) + Math.abs(gamma/Math.PI));
+                            } else {
+                                // Use mouse for amplitude on desktop
+                                const mouseInfluence = mouse.moved ? Math.abs(mouse.x) + Math.abs(mouse.y) : 1;
+                                amplitude = 2 * (1 + mouseInfluence);
+                            }
+                            
+                            const distanceFactor = 1 - (distance / (gridSize/2));
+                            amplitude *= distanceFactor;
+                            
+                            // Multiple sine waves for more organic movement
+                            const wave1 = Math.sin(distance * 0.5 + time * 2) * 0.5 * amplitude;
+                            const wave2 = Math.sin(x * 0.3 + time * 1.5) * 0.3 * amplitude;
+                            const wave3 = Math.sin(y * 0.2 + time) * 0.2 * amplitude;
+                            
+                            // Combine waves
+                            position.z = wave1 + wave2 + wave3;
+                            
+                            // Scale based on distance from center
+                            const scaleFactor = 1 - (distance / (gridSize/2)) * 0.5;
+                            let scaleInfluence;
+                            
+                            if (isMobile && deviceOrientationEnabled) {
+                                // Use beta for scale influence on mobile
+                                scaleInfluence = 1 + (Math.abs(beta/Math.PI) * 0.5);
+                            } else {
+                                // Use mouse for scale influence on desktop
+                                scaleInfluence = mouse.moved ? 1 + (Math.abs(mouse.x) * 0.5) : 1;
+                            }
+                            
+                            scale.set(
+                                scaleFactor * scaleInfluence,
+                                scaleFactor * scaleInfluence,
+                                scaleFactor * scaleInfluence
+                            );
+                            
+                            // Update matrix
+                            matrix.compose(position, quaternion, scale);
+                            instancedMesh.setMatrixAt(index, matrix);
+                            
+                            index++;
+                        }
+                    }
+                }
+                
+                instancedMesh.instanceMatrix.needsUpdate = true;
+                
+                renderer.render(scene, camera);
+            };
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // Start animation
+            animate();
+        });
+    </script>
+
+    <!-- Smooth scrolling and other interactions -->
+    <script>
+        // Simple smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add hover effects for links
+        document.querySelectorAll('a').forEach(link => {
+            if (!link.closest('nav')) {
+                link.addEventListener('mouseenter', function() {
+                    this.style.opacity = '0.5';
+                    this.style.transition = 'opacity 0.3s ease';
+                });
+                link.addEventListener('mouseleave', function() {
+                    this.style.opacity = '1';
+                });
+            }
+        });
+
+        // Add focus effects for form elements
+        document.querySelectorAll('form input, form textarea').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.borderColor = '#444';
+            });
+            input.addEventListener('blur', function() {
+                this.style.borderColor = '#222';
+            });
+        });
+    </script>
+</body>
+</html>
