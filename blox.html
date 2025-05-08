@@ -67,7 +67,6 @@
           sprite.position.set(data.x, data.y, data.z);
         }
       });
-      // send own name
       conn.on('open', () => conn.send({ type: 'join', name: playerName }));
     }
 
@@ -128,7 +127,8 @@
     // Movement & jumping
     const velocity=new THREE.Vector3(), dir=new THREE.Vector3();
     const move={fw:false,back:false,left:false,right:false}; let canJump=false;
-    const walkAccel=600, jumpSpeed=250, gravity=400;
+    // Slower walking acceleration for reduced speed
+    const walkAccel=150, jumpSpeed=250, gravity=400;
     const km={KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
     document.addEventListener('keydown', e=>{
       if(e.code in km) move[km[e.code]] = true;
@@ -157,8 +157,7 @@
 
     // Send position periodically
     setInterval(() => {
-      const p = { type:'pos', x:camera.position.x, y:camera.position.y, z:camera.position.z };
-      broadcast(p);
+      broadcast({ type:'pos', x:camera.position.x, y:camera.position.y, z:camera.position.z });
     }, 50);
 
     // Animation
