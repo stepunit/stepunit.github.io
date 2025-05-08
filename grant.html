@@ -150,7 +150,7 @@
         // random panic trigger
         if (!data.panic && Math.random() < 0.002) {
           data.panic = true;
-          data.panicTime = 3; // seconds
+          data.panicTime = 7; // seconds
           npc.material.color.set(0xff0000);
           npc.children[0].element.textContent = 'i wanna go home NOW!!';
         }
