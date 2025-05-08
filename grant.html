@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grant Minigame</title>
+  <title>Nightclub Minigame</title>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
     canvas { display: block; }
@@ -35,27 +35,25 @@
     let scene, camera, renderer, labelRenderer, controls;
     const npcs = [];
     const chatTexts = [
-      "I'm sleepy",
-      "when are they gonna play some CUMBIA",
-      "can i hit that?",
-      "such a slutty waist bro",
-      "oh phiIIIIilipPP",
-      "bro... have you heard that new fakemink?",
-      "wanna do ketamine?",
-      "*stretches*",
+      "Hey, what's up?",
+      "Great tunes tonight!",
+      "Wanna dance?",
+      "Bar's this way.",
+      "You lookin' good!"
     ];
     const move = { forward: false, backward: false, left: false, right: false };
+    const NPC_COUNT = 50;
+    const FLOOR_SIZE = 50;
 
     init();
     animate();
 
     function init() {
-      console.log('Initializing scene');
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x111111);
 
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.y = 1.6;
+      camera.position.set(0, 1.6, 5);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -67,51 +65,59 @@
       labelRenderer.domElement.style.top = '0';
       document.body.appendChild(labelRenderer.domElement);
 
-      // Lights
       scene.add(new THREE.AmbientLight(0x404040));
-      const pointLight = new THREE.PointLight(0xffffff, 1, 100);
-      pointLight.position.set(0, 5, 0);
+      const pointLight = new THREE.PointLight(0xffffff, 1, 200);
+      pointLight.position.set(0, 10, 0);
       scene.add(pointLight);
 
-      // Floor
+      const textureLoader = new THREE.TextureLoader();
+      const floorTexture = textureLoader.load('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/textures/checker.png');
+      floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+      floorTexture.repeat.set(FLOOR_SIZE / 2, FLOOR_SIZE / 2);
+
       const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(50, 50),
-        new THREE.MeshLambertMaterial({ color: 0x222222 })
+        new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE),
+        new THREE.MeshLambertMaterial({ map: floorTexture })
       );
       floor.rotation.x = -Math.PI / 2;
       scene.add(floor);
 
-      // Room walls
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x222244, side: THREE.BackSide });
-      const room = new THREE.Mesh(new THREE.BoxGeometry(50, 10, 50), wallMat);
+      const room = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_SIZE, 10, FLOOR_SIZE), wallMat);
       room.position.y = 5;
       scene.add(room);
 
-      // Controls
       controls = new PointerLockControls(camera, document.body);
       document.body.addEventListener('click', () => controls.lock());
       scene.add(controls.getObject());
 
-      // Movement listeners
       document.addEventListener('keydown', onKeyDown);
       document.addEventListener('keyup', onKeyUp);
 
-      // Load NPC texture
-      const textureLoader = new THREE.TextureLoader();
       const npcTexture = textureLoader.load('grant_scary.png');
 
-      // Spawn NPCs with chat bubbles
-      const npcGeometry = new THREE.BoxGeometry(0.3, 2.2, 0.3); // slim & tall
-      const npcMaterial = new THREE.MeshBasicMaterial({ map: npcTexture, transparent: true });
-
-      for (let i = 0; i < 5; i++) {
-        const npc = new THREE.Mesh(npcGeometry, npcMaterial);
-        npc.position.set((Math.random() - 0.5) * 20, 1.1, (Math.random() - 0.5) * 20);
+      for (let i = 0; i < NPC_COUNT; i++) {
+        const spriteMaterial = new THREE.SpriteMaterial({ map: npcTexture, transparent: true });
+        const npc = new THREE.Sprite(spriteMaterial);
+        npc.scale.set(0.6, 2.2, 1);
+        npc.position.set(
+          (Math.random() - 0.5) * (FLOOR_SIZE - 2),
+          1.1,
+          (Math.random() - 0.5) * (FLOOR_SIZE - 2)
+        );
+        // random velocity
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = 1 + Math.random() * 2;
+        npc.userData.velocity = new THREE.Vector3(
+          Math.cos(angle) * speed,
+          0,
+          Math.sin(angle) * speed
+        );
         scene.add(npc);
 
         const div = document.createElement('div');
         div.className = 'chatBubble';
-        div.textContent = chatTexts[i];
+        div.textContent = chatTexts[Math.floor(Math.random() * chatTexts.length)];
         const label = new CSS2DObject(div);
         label.position.set(0, 1.4, 0);
         npc.add(label);
@@ -130,6 +136,15 @@
     function animate() {
       requestAnimationFrame(animate);
       const delta = 0.1;
+      // Move NPCs randomly and bounce
+      npcs.forEach(npc => {
+        const v = npc.userData.velocity;
+        npc.position.add(v.clone().multiplyScalar(delta));
+        const half = FLOOR_SIZE / 2 - 1;
+        if (npc.position.x < -half || npc.position.x > half) v.x *= -1;
+        if (npc.position.z < -half || npc.position.z > half) v.z *= -1;
+      });
+
       if (controls.isLocked) {
         const velocity = new THREE.Vector3();
         if (move.forward) velocity.z += 5 * delta;
