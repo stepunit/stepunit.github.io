@@ -83,6 +83,7 @@
         new THREE.MeshLambertMaterial({ map: floorTexture })
       );
       floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 0.01; // lift slightly to avoid z-fighting with room bottom
       scene.add(floor);
 
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x222244, side: THREE.BackSide });
@@ -123,7 +124,7 @@
         div.className = 'chatBubble';
         div.textContent = chatTexts[Math.floor(Math.random() * chatTexts.length)];
         const label = new CSS2DObject(div);
-        label.position.set(0, 1.4, 0);
+        label.position.set(0, 0.8, 0); // closer to sprite
         npc.add(label);
         npcs.push(npc);
       }
@@ -150,7 +151,7 @@
         // random panic trigger
         if (!data.panic && Math.random() < 0.002) {
           data.panic = true;
-          data.panicTime = 7; // seconds
+          data.panicTime = 3; // seconds
           npc.material.color.set(0xff0000);
           npc.children[0].element.textContent = 'i wanna go home NOW!!';
         }
@@ -190,7 +191,7 @@
     function onKeyDown(event) {
       switch (event.code) {
         case 'KeyW': move.forward = true; break;
-        case 'KeyS': move.backward = true; break;
+        case 'KeyS': move.backward = false; break;
         case 'KeyA': move.left = true; break;
         case 'KeyD': move.right = true; break;
       }
