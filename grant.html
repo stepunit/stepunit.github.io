@@ -83,7 +83,7 @@
         new THREE.MeshLambertMaterial({ map: floorTexture })
       );
       floor.rotation.x = -Math.PI / 2;
-      floor.position.y = 0.01; // lift slightly to avoid z-fighting with room bottom
+      floor.position.y = 0.01;
       scene.add(floor);
 
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x222244, side: THREE.BackSide });
@@ -109,7 +109,6 @@
           1.1,
           (Math.random() - 0.5) * (FLOOR_SIZE - 2)
         );
-        // movement and panic data
         const angle = Math.random() * 2 * Math.PI;
         const speed = 1 + Math.random() * 2;
         npc.userData = {
@@ -119,12 +118,11 @@
         };
         scene.add(npc);
 
-        // chat bubble
         const div = document.createElement('div');
         div.className = 'chatBubble';
         div.textContent = chatTexts[Math.floor(Math.random() * chatTexts.length)];
         const label = new CSS2DObject(div);
-        label.position.set(0, 0.8, 0); // closer to sprite
+        label.position.set(0, 0.8, 0);
         npc.add(label);
         npcs.push(npc);
       }
@@ -145,25 +143,20 @@
       requestAnimationFrame(animate);
       const delta = 0.1;
 
-      // NPC movement and panic logic
       npcs.forEach(npc => {
         const data = npc.userData;
-        // random panic trigger
         if (!data.panic && Math.random() < 0.002) {
           data.panic = true;
-          data.panicTime = 3; // seconds
+          data.panicTime = 10; // panic lasts 10 seconds
           npc.material.color.set(0xff0000);
           npc.children[0].element.textContent = 'i wanna go home NOW!!';
         }
-        // apply movement
         npc.position.add(data.velocity.clone().multiplyScalar(delta));
         const half = FLOOR_SIZE / 2 - 1;
         if (npc.position.x < -half || npc.position.x > half) data.velocity.x *= -1;
         if (npc.position.z < -half || npc.position.z > half) data.velocity.z *= -1;
-        // panic handling
         if (data.panic) {
           data.panicTime -= delta;
-          // shake effect
           npc.position.x += (Math.random() - 0.5) * 0.1;
           npc.position.z += (Math.random() - 0.5) * 0.1;
           if (data.panicTime <= 0) {
