@@ -42,7 +42,7 @@
       "oh phiIIIIilipPP",
       "bro... have you heard that new fakemink?",
       "wanna do ketamine?",
-      "*stretches*",
+      "*stretches*"
     ];
     const move = { forward: false, backward: false, left: false, right: false };
     const NPC_COUNT = 50;
@@ -73,11 +73,11 @@
       pointLight.position.set(0, 10, 0);
       scene.add(pointLight);
 
+      // Floor with texture
       const textureLoader = new THREE.TextureLoader();
-      const floorTexture = textureLoader.load('https://static.thenounproject.com/png/1684697-200.png');
+      const floorTexture = textureLoader.load('https://threejs.org/examples/textures/checker.png');
       floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
       floorTexture.repeat.set(FLOOR_SIZE / 2, FLOOR_SIZE / 2);
-
       const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE),
         new THREE.MeshLambertMaterial({ map: floorTexture })
@@ -100,7 +100,7 @@
       const npcTexture = textureLoader.load('grant_scary.png');
 
       for (let i = 0; i < NPC_COUNT; i++) {
-        const spriteMaterial = new THREE.SpriteMaterial({ map: npcTexture, transparent: true });
+        const spriteMaterial = new THREE.SpriteMaterial({ map: npcTexture, color: 0xffffff, transparent: true });
         const npc = new THREE.Sprite(spriteMaterial);
         npc.scale.set(0.6, 2.2, 1);
         npc.position.set(
@@ -108,16 +108,17 @@
           1.1,
           (Math.random() - 0.5) * (FLOOR_SIZE - 2)
         );
-        // random velocity
+        // movement and panic data
         const angle = Math.random() * 2 * Math.PI;
         const speed = 1 + Math.random() * 2;
-        npc.userData.velocity = new THREE.Vector3(
-          Math.cos(angle) * speed,
-          0,
-          Math.sin(angle) * speed
-        );
+        npc.userData = {
+          velocity: new THREE.Vector3(Math.cos(angle) * speed, 0, Math.sin(angle) * speed),
+          panic: false,
+          panicTime: 0
+        };
         scene.add(npc);
 
+        // chat bubble
         const div = document.createElement('div');
         div.className = 'chatBubble';
         div.textContent = chatTexts[Math.floor(Math.random() * chatTexts.length)];
@@ -128,24 +129,48 @@
       }
 
       window.addEventListener('resize', onWindowResize);
-      setInterval(() => {
-        npcs.forEach(npc => {
-          const idx = Math.floor(Math.random() * chatTexts.length);
-          npc.children[0].element.textContent = chatTexts[idx];
-        });
-      }, 5000);
+      setInterval(updateChats, 5000);
+    }
+
+    function updateChats() {
+      npcs.forEach(npc => {
+        if (!npc.userData.panic) {
+          npc.children[0].element.textContent = chatTexts[Math.floor(Math.random() * chatTexts.length)];
+        }
+      });
     }
 
     function animate() {
       requestAnimationFrame(animate);
       const delta = 0.1;
-      // Move NPCs randomly and bounce
+
+      // NPC movement and panic logic
       npcs.forEach(npc => {
-        const v = npc.userData.velocity;
-        npc.position.add(v.clone().multiplyScalar(delta));
+        const data = npc.userData;
+        // random panic trigger
+        if (!data.panic && Math.random() < 0.002) {
+          data.panic = true;
+          data.panicTime = 3; // seconds
+          npc.material.color.set(0xff0000);
+          npc.children[0].element.textContent = 'i wanna go home NOW!!';
+        }
+        // apply movement
+        npc.position.add(data.velocity.clone().multiplyScalar(delta));
         const half = FLOOR_SIZE / 2 - 1;
-        if (npc.position.x < -half || npc.position.x > half) v.x *= -1;
-        if (npc.position.z < -half || npc.position.z > half) v.z *= -1;
+        if (npc.position.x < -half || npc.position.x > half) data.velocity.x *= -1;
+        if (npc.position.z < -half || npc.position.z > half) data.velocity.z *= -1;
+        // panic handling
+        if (data.panic) {
+          data.panicTime -= delta;
+          // shake effect
+          npc.position.x += (Math.random() - 0.5) * 0.1;
+          npc.position.z += (Math.random() - 0.5) * 0.1;
+          if (data.panicTime <= 0) {
+            data.panic = false;
+            npc.material.color.set(0xffffff);
+            npc.children[0].element.textContent = chatTexts[Math.floor(Math.random() * chatTexts.length)];
+          }
+        }
       });
 
       if (controls.isLocked) {
@@ -157,6 +182,7 @@
         controls.moveRight(velocity.x * delta);
         controls.moveForward(velocity.z * delta);
       }
+
       renderer.render(scene, camera);
       labelRenderer.render(scene, camera);
     }
