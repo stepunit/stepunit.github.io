@@ -145,17 +145,22 @@
     function coll(px,pz,py){const f=Math.floor(py-1.6+0.1),h=Math.floor(py-0.1);
       return blocks[`${Math.floor(px)},${f},${Math.floor(pz)}`]||blocks[`${Math.floor(px)},${h},${Math.floor(pz)}`];}
     const vel=new THREE.Vector3(),dir=new THREE.Vector3(),move={fw:false,back:false,left:false,right:false};
-    let canJump=false;const acc=50,jump=150,grav=300,fr=15;const km={KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
-    document.addEventListener('keydown',e=>{if(e.code in km)move[km[e.code]]=true; if(e.code==='Space'&&canJump){vel.y=jump;canJump=false;}});
-    document.addEventListener('keyup',e=>{if(e.code in km)move[km[e.code]]=false;});
+    let canJump=false;
+    const acc=150, jumpSpeed=20, gravity=100, friction=15;
+    const km={KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
+    document.addEventListener('keydown',e=>{
+      if(e.code in km) move[km[e.code]] = true;
+      if(e.code==='Space' && canJump) { vel.y = jumpSpeed; canJump=false; }
+    });
+    document.addEventListener('keyup',e=>{ if(e.code in km) move[km[e.code]] = false; });
 
     document.addEventListener('mousedown',e=>{
       const ray=new THREE.Raycaster(); ray.setFromCamera({x:0,y:0},camera);
-      const h=ray.intersectObjects(Object.values(blocks))[0]; if(!h)return;
-      const p=h.object.position.clone().subScalar(0.5),n=h.face.normal;
-      const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);
-      if(e.button===0){delete blocks[`${bx},${by},${bz}`];scene.remove(h.object);} else {
-        const key=`${bx+n.x},${by+n.y},${bz+n.z}`; if(!blocks[key]) addBlock(bx+n.x,by+n.y,bz+n.z,dirtM);}
+      const h=ray.intersectObjects(Object.values(blocks))[0]; if(!h) return;
+      const p=h.object.position.clone().subScalar(0.5), n=h.face.normal;
+      const bx=Math.floor(p.x), by=Math.floor(p.y), bz=Math.floor(p.z);
+      if(e.button===0){ delete blocks[`${bx},${by},${bz}`]; scene.remove(h.object); }
+      else { const key=`${bx+n.x},${by+n.y},${bz+n.z}`; if(!blocks[key]) addBlock(bx+n.x,by+n.y,bz+n.z,dirtM); }
     });
     document.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -166,27 +171,41 @@
     scene.add(pick);
 
     // Others
-    const others={}; const sprTex=new THREE.TextureLoader().load('grant_scary.png');
-    function getO(id){if(!others[id]){const m=new THREE.SpriteMaterial({map:sprTex});const s=new THREE.Sprite(m);scene.add(s);others[id]=s;}return others[id];}
-    function updateOther(id,d){getO(id).position.set(d.x,d.y,d.z);} setInterval(()=>broadcast({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z}),100);
+    const others={}; const spr=new THREE.TextureLoader().load('grant_scary.png');
+    function getOther(id){ if(!others[id]){ const mat=new THREE.SpriteMaterial({map:spr}); const s=new THREE.Sprite(mat); scene.add(s); others[id]=s; } return others[id]; }
+    function updateOther(id,d){ getOther(id).position.set(d.x,d.y,d.z); }
+    setInterval(() => broadcast({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z}),100);
 
     // Animation
-    const clock=new THREE.Clock(); camera.position.set(0,(Math.max(...Object.keys(blocks).map(k=>k.split(',').map(n=>+n)[1]))||0)+1.6,0);
-    (function animate(){const dt=clock.getDelta();requestAnimationFrame(animate);
-      if(controls.isLocked){vel.y-=grav*dt;dir.z=(move.fw?1:0)-(move.back?1:0);dir.x=(move.right?1:0)-(move.left?1:0);dir.normalize();
-        if(move.fw||move.back)vel.z-=dir.z*acc*dt; if(move.left||move.right)vel.x-=dir.x*acc*dt;
-        vel.x-=vel.x*fr*dt;vel.z-=vel.z*fr*dt;
-        const ox=camera.position.x,oz=camera.position.z;
-        controls.moveRight(-vel.x*dt); if(coll(camera.position.x,camera.position.z,camera.position.y))camera.position.x=ox;
-        controls.moveForward(-vel.z*dt); if(coll(camera.position.x,camera.position.z,camera.position.y))camera.position.z=oz;
-        camera.position.y+=vel.y*dt;const foot=`${Math.floor(camera.position.x)},${Math.floor(camera.position.y-1.6)},${Math.floor(camera.position.z)}`;
-        if(blocks[foot]){camera.position.y=Math.floor(camera.position.y-1.6)+1.6;vel.y=0;canJump=true;}
+    const clock=new THREE.Clock(); camera.position.set(0,(Math.max(...Object.keys(blocks).map(k=>k.split(',').map(Number)[1]))||0)+1.6,0);
+    (function animate(){ const dt=clock.getDelta(); requestAnimationFrame(animate);
+      if(controls.isLocked){
+        vel.y -= gravity * dt;
+        dir.z = (move.fw?1:0) - (move.back?1:0);
+        dir.x = (move.right?1:0) - (move.left?1:0);
+        dir.normalize();
+        if(move.fw||move.back) vel.z -= dir.z * acc * dt;
+        if(move.left||move.right) vel.x -= dir.x * acc * dt;
+        vel.x -= vel.x * friction * dt;
+        vel.z -= vel.z * friction * dt;
+        const ox = camera.position.x, oz = camera.position.z;
+        controls.moveRight(-vel.x * dt);
+        if(coll(camera.position.x, camera.position.z, camera.position.y)) camera.position.x = ox;
+        controls.moveForward(-vel.z * dt);
+        if(coll(camera.position.x, camera.position.z, camera.position.y)) camera.position.z = oz;
+        camera.position.y += vel.y * dt;
+        const footKey = `${Math.floor(camera.position.x)},${Math.floor(camera.position.y - 1.6)},${Math.floor(camera.position.z)}`;
+        if(blocks[footKey]){ camera.position.y = Math.floor(camera.position.y - 1.6) + 1.6; vel.y = 0; canJump = true; }
       }
-      pick.position.copy(camera.position);pick.quaternion.copy(camera.quaternion);pick.translateX(0.5);pick.translateY(-0.5);pick.translateZ(-1);
-      renderer.render(scene,camera);
+      pick.position.copy(camera.position);
+      pick.quaternion.copy(camera.quaternion);
+      pick.translateX(0.5);
+      pick.translateY(-0.5);
+      pick.translateZ(-1);
+      renderer.render(scene, camera);
     })();
 
-    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+    window.addEventListener('resize',()=>{ camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
   </script>
 </body>
 </html>
