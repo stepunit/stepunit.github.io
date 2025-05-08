@@ -32,93 +32,108 @@
   <script type="module">
     import * as THREE from 'three';
     import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+    import SimplexNoise from 'https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js';
 
     // P2P Setup via PeerJS
     const peer = new Peer();
     const connections = {};
     const playerNames = {};
-
-    peer.on('open', id => {
-      document.getElementById('peer-info').textContent = `Your Peer ID: ${id}`;
-    });
-
+    peer.on('open', id => document.getElementById('peer-info').textContent = `Your Peer ID: ${id}`);
     document.getElementById('connect').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        const remoteId = e.target.value.trim();
-        if (!connections[remoteId]) {
-          const conn = peer.connect(remoteId);
-          setupConnection(conn);
-        }
+        const remote = e.target.value.trim();
+        if (remote && !connections[remote]) setupConnection(peer.connect(remote));
         e.target.value = '';
       }
     });
-
-    peer.on('connection', conn => {
-      setupConnection(conn);
-    });
-
+    peer.on('connection', setupConnection);
     function setupConnection(conn) {
       connections[conn.peer] = conn;
       conn.on('data', data => {
-        if (data.type === 'join') {
-          playerNames[conn.peer] = data.name;
-        } else if (data.type === 'pos') {
-          const sprite = getOrCreateSprite(conn.peer);
-          sprite.position.set(data.x, data.y, data.z);
+        if (data.type === 'join') playerNames[conn.peer] = data.name;
+        if (data.type === 'pos') {
+          const s = getOrCreateSprite(conn.peer);
+          s.position.set(data.x, data.y, data.z);
         }
       });
       conn.on('open', () => conn.send({ type: 'join', name: playerName }));
     }
+    function broadcast(d) { Object.values(connections).forEach(c => c.send(d)); }
 
-    function broadcast(data) {
-      Object.values(connections).forEach(conn => conn.send(data));
-    }
+    // Name
+    const adjectives=['Brave','Cunning','Swift','Ancient','Mighty','Silent','Fierce','Gentle'];
+    const nouns=['Lion','Wolf','Eagle','Dragon','Fox','Tiger','Bear','Hawk'];
+    function rand(a){return a[Math.floor(Math.random()*a.length)];}
+    const playerName = rand(adjectives)+rand(nouns)+Math.floor(Math.random()*1000);
 
-    // Random name generator
-    const adjectives = ['Brave','Cunning','Swift','Ancient','Mighty','Silent','Fierce','Gentle'];
-    const nouns = ['Lion','Wolf','Eagle','Dragon','Fox','Tiger','Bear','Hawk'];
-    function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-    const playerName = rand(adjectives) + rand(nouns) + Math.floor(Math.random()*1000);
-
-    // Three.js setup
+    // Three.js init
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     const controls = new PointerLockControls(camera, document.body);
-    const instructions = document.getElementById('instructions');
-    instructions.addEventListener('click', () => controls.lock());
-    controls.addEventListener('lock', () => instructions.style.display='none');
-    controls.addEventListener('unlock', () => instructions.style.display='');
+    const instr = document.getElementById('instructions');
+    instr.addEventListener('click', ()=>controls.lock());
+    controls.addEventListener('lock', ()=>instr.style.display='none');
+    controls.addEventListener('unlock', ()=>instr.style.display='');
+    scene.add(new THREE.AmbientLight(0xffffff,0.6));
+    const sun = new THREE.DirectionalLight(0xffffff,0.6);
+    sun.position.set(100,100,50);
+    scene.add(sun);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const light = new THREE.DirectionalLight(0xffffff, 0.6);
-    light.position.set(100,100,50);
-    scene.add(light);
+    // Materials
+    const grassMats = [
+      new THREE.MeshLambertMaterial({color:0x964B00}), // right
+      new THREE.MeshLambertMaterial({color:0x964B00}), // left
+      new THREE.MeshLambertMaterial({color:0x00ff00}), // top
+      new THREE.MeshLambertMaterial({color:0x964B00}), // bottom
+      new THREE.MeshLambertMaterial({color:0x964B00}), // front
+      new THREE.MeshLambertMaterial({color:0x964B00})  // back
+    ];
+    const dirtMats = Array(6).fill().map(()=>new THREE.MeshLambertMaterial({color:0x964B00}));
+    const stoneMats = Array(6).fill().map(()=>new THREE.MeshLambertMaterial({color:0x888888}));
 
-    // Blocks
-    const W=32, D=32, H=8;
+    // Procedural terrain with noise
+    const noise = new SimplexNoise();
+    const noiseScale = 0.1;
+    const W=32, D=32, H=16;
     const blocks = {}, geoms = {};
-    const blockMats = Array(6).fill().map((_,i) => new THREE.MeshLambertMaterial({ color: i===0 ? 0x00ff00 : 0x964B00 }));
-    const key = (x,y,z)=>`${x},${y},${z}`;
-    function addBlock(x,y,z) {
-      const gk='1x1x1'; if(!geoms[gk]) geoms[gk]=new THREE.BoxBufferGeometry(1,1,1);
-      const m=new THREE.Mesh(geoms[gk], blockMats); m.position.set(x+0.5,y+0.5,z+0.5);
-      scene.add(m); blocks[key(x,y,z)] = m;
+    const key=(x,y,z)=>`${x},${y},${z}`;
+    function addBlock(x,y,z,mats){
+      const gk='1x1x1';
+      if(!geoms[gk]) geoms[gk] = new THREE.BoxBufferGeometry(1,1,1);
+      const m = new THREE.Mesh(geoms[gk], mats || dirtMats);
+      m.position.set(x+0.5,y+0.5,z+0.5);
+      scene.add(m);
+      blocks[key(x,y,z)] = m;
     }
-    function removeBlock(x,y,z){ const k=key(x,y,z); if(blocks[k]){ scene.remove(blocks[k]); delete blocks[k]; }}
-    for(let x=-W/2;x<W/2;x++) for(let z=-D/2;z<D/2;z++) for(let y=0;y<H;y++) addBlock(x,y,z);
+    // Generate blocks
+    for(let x=-W/2;x<W/2;x++){
+      for(let z=-D/2;z<D/2;z++){
+        const h = Math.floor((noise.noise2D(x*noiseScale, z*noiseScale)+1)/2 * (H-1)) + 1;
+        for(let y=0;y<h;y++){
+          const depth = h - y;
+          let mats;
+          if(depth===1) mats = grassMats;
+          else if(depth<=4) mats = dirtMats;
+          else mats = stoneMats;
+          addBlock(x,y,z,mats);
+        }
+      }
+    }
 
+    // Interaction
     const ray = new THREE.Raycaster();
-    document.addEventListener('mousedown', e => {
+    document.addEventListener('mousedown', e=>{
       ray.setFromCamera({x:0,y:0}, camera);
-      const hits = ray.intersectObjects(Object.values(blocks));
-      if(hits.length) {
-        const h=hits[0], pos=h.object.position.clone().subScalar(0.5), n=h.face.normal;
+      const hit = ray.intersectObjects(Object.values(blocks))[0];
+      if(hit){
+        const pos = hit.object.position.clone().subScalar(0.5);
+        const n = hit.face.normal;
         const [x,y,z]=[pos.x,pos.y,pos.z];
-        if(e.button===0) removeBlock(x,y,z);
+        if(e.button===0) { scene.remove(blocks[key(x,y,z)]); delete blocks[key(x,y,z)]; }
         if(e.button===2) addBlock(x+n.x,y+n.y,z+n.z);
       }
     });
@@ -127,7 +142,6 @@
     // Movement & jumping
     const velocity=new THREE.Vector3(), dir=new THREE.Vector3();
     const move={fw:false,back:false,left:false,right:false}; let canJump=false;
-    // Slower walking acceleration for reduced speed
     const walkAccel=150, jumpSpeed=250, gravity=400;
     const km={KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
     document.addEventListener('keydown', e=>{
@@ -137,15 +151,17 @@
     document.addEventListener('keyup', e=>{ if(e.code in km) move[km[e.code]] = false; });
 
     // Pickaxe
-    const pick=new THREE.Group();
-    const h=new THREE.Mesh(new THREE.BoxBufferGeometry(0.1,1,0.1), new THREE.MeshLambertMaterial({color:0x8B4513})); h.position.set(0,-0.5,0); pick.add(h);
-    const hd=new THREE.Mesh(new THREE.BoxBufferGeometry(0.6,0.1,0.1), new THREE.MeshLambertMaterial({color:0xcccccc})); hd.position.set(0,-1,0); hd.rotateZ(Math.PI/2); pick.add(hd);
+    const pick = new THREE.Group();
+    const handle = new THREE.Mesh(new THREE.BoxBufferGeometry(0.1,1,0.1), new THREE.MeshLambertMaterial({color:0x8B4513}));
+    handle.position.set(0,-0.5,0); pick.add(handle);
+    const head = new THREE.Mesh(new THREE.BoxBufferGeometry(0.6,0.1,0.1), new THREE.MeshLambertMaterial({color:0xcccccc}));
+    head.position.set(0,-1,0); head.rotateZ(Math.PI/2); pick.add(head);
     scene.add(pick);
 
     // Other players
     const otherPlayers = {};
     const spriteMap = new THREE.TextureLoader().load('grant_scary.png');
-    function getOrCreateSprite(id) {
+    function getOrCreateSprite(id){
       if(!otherPlayers[id]){
         const mat = new THREE.SpriteMaterial({ map: spriteMap });
         const s = new THREE.Sprite(mat);
@@ -155,17 +171,16 @@
       return otherPlayers[id];
     }
 
-    // Send position periodically
-    setInterval(() => {
-      broadcast({ type:'pos', x:camera.position.x, y:camera.position.y, z:camera.position.z });
-    }, 50);
+    // Broadcast position
+    setInterval(()=> broadcast({ type:'pos', x:camera.position.x, y:camera.position.y, z:camera.position.z }), 50);
 
-    // Animation
+    // Animate
     const clock = new THREE.Clock();
     camera.position.set(0, H+2, 0);
-    function animate() {
-      const dt = clock.getDelta(); requestAnimationFrame(animate);
-      if(controls.isLocked) {
+    function animate(){
+      const dt = clock.getDelta();
+      requestAnimationFrame(animate);
+      if(controls.isLocked){
         velocity.y -= gravity * dt;
         dir.z = (move.fw?1:0) - (move.back?1:0);
         dir.x = (move.right?1:0) - (move.left?1:0);
@@ -179,11 +194,10 @@
       }
       pick.position.copy(camera.position); pick.quaternion.copy(camera.quaternion);
       pick.translateX(0.5); pick.translateY(-0.5); pick.translateZ(-1);
-      renderer.render(scene,camera);
+      renderer.render(scene, camera);
     }
     animate();
 
-    // Resize
     window.addEventListener('resize', ()=>{
       camera.aspect = window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);
