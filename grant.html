@@ -66,7 +66,8 @@
     const move = { forward: false, backward: false, left: false, right: false };
     const NPC_COUNT = 50;
     const FLOOR_SIZE = 50;
-    const COLLISION_RADIUS = 0.5; // threshold for touch
+    // Collide when within this 2D horizontal distance
+    const COLLISION_RADIUS = 0.3;
 
     init();
     animate();
@@ -93,7 +94,7 @@
       pointLight.position.set(0, 10, 0);
       scene.add(pointLight);
 
-      // Floor with texture
+      // Floor
       const textureLoader = new THREE.TextureLoader();
       const floorTexture = textureLoader.load('https://threejs.org/examples/textures/checker.png');
       floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
@@ -106,8 +107,10 @@
       floor.position.y = 0.01;
       scene.add(floor);
 
-      const wallMat = new THREE.MeshLambertMaterial({ color: 0x222244, side: THREE.BackSide });
-      const room = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_SIZE, 10, FLOOR_SIZE), wallMat);
+      const room = new THREE.Mesh(
+        new THREE.BoxGeometry(FLOOR_SIZE, 10, FLOOR_SIZE),
+        new THREE.MeshLambertMaterial({ color: 0x222244, side: THREE.BackSide })
+      );
       room.position.y = 5;
       scene.add(room);
 
@@ -120,8 +123,8 @@
 
       const npcTexture = textureLoader.load('grant_scary.png');
       for (let i = 0; i < NPC_COUNT; i++) {
-        const spriteMaterial = new THREE.SpriteMaterial({ map: npcTexture, color: 0xffffff, transparent: true });
-        const npc = new THREE.Sprite(spriteMaterial);
+        const material = new THREE.SpriteMaterial({ map: npcTexture, transparent: true });
+        const npc = new THREE.Sprite(material);
         npc.scale.set(0.6, 2.2, 1);
         npc.position.set(
           (Math.random() - 0.5) * (FLOOR_SIZE - 2),
@@ -187,10 +190,12 @@
         }
       });
 
-      // Collision detection with smaller radius
+      // Collision detection: horizontal only
       const playerPos = controls.getObject().position;
       for (const npc of npcs) {
-        if (npc.position.distanceTo(playerPos) < COLLISION_RADIUS) {
+        const dx = npc.position.x - playerPos.x;
+        const dz = npc.position.z - playerPos.z;
+        if (Math.sqrt(dx*dx + dz*dz) < COLLISION_RADIUS) {
           gameOver = true;
           gameoverDiv.style.display = 'flex';
           controls.unlock();
