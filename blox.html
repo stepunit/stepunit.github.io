@@ -20,169 +20,104 @@
 <body>
   <div id="instructions">Click to play</div>
   <input id="peer-info" readonly title="Right-click to copy ID" />
-  <div id="chat-container">
-    <div id="chat-log"></div>
-    <input id="chat-input" placeholder="Type /connect peerId or message" />
-  </div>
+  <div id="chat-container"><div id="chat-log"></div><input id="chat-input" placeholder="Type /connect peerId or message" /></div>
   <script type="module">
     import * as THREE from 'three';
     import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
+    // P2P Setup
     let camera, controls, renderer;
-    // === P2P Setup ===
-    const peer = new Peer();
-    const connections = {};
+    const peer = new Peer(); const connections = {};
     const peerInfo = document.getElementById('peer-info');
-    peer.on('open', id => { peerInfo.value = id; });
-    peerInfo.addEventListener('contextmenu', e => { e.preventDefault(); peerInfo.select(); document.execCommand('copy'); });
-    function setupConnection(conn) {
-      connections[conn.peer] = conn;
-      conn.on('data', data => handleData(conn.peer, data));
-      conn.on('open', () => {
-        conn.send({ type:'join', name: playerName });
-        conn.send({ type:'pos', x: camera.position.x, y: camera.position.y, z: camera.position.z });
+    peer.on('open', id=>peerInfo.value=id);
+    peerInfo.addEventListener('contextmenu',e=>{e.preventDefault();peerInfo.select();document.execCommand('copy');});
+    function setupConnection(conn){
+      connections[conn.peer]=conn;
+      conn.on('data',data=>handleData(conn.peer,data));
+      conn.on('open',()=>{
+        conn.send({type:'join',name:playerName});
+        conn.send({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z});
       });
     }
-    peer.on('connection', setupConnection);
-    function broadcast(msg) { Object.values(connections).forEach(c => c.send(msg)); }
-    function handleData(id, data) {
-      if (data.type === 'join') appendChat(`${data.name} joined.`);
-      if (data.type === 'chat') appendChat(`${data.name}: ${data.text}`);
-      if (data.type === 'pos') updateOther(id, data);
+    peer.on('connection',setupConnection);
+    function broadcast(msg){for(const c of Object.values(connections))c.send(msg);}
+    function handleData(id,data){
+      if(data.type==='join')appendChat(`${data.name} joined.`);
+      if(data.type==='chat')appendChat(`${data.name}: ${data.text}`);
+      if(data.type==='pos')updateOther(id,data);
     }
 
-    // === Chat UI ===
-    const chatContainer = document.getElementById('chat-container');
-    const chatLog = document.getElementById('chat-log');
-    const chatInput = document.getElementById('chat-input');
-    function appendChat(msg) {
-      const d = document.createElement('div'); d.textContent = msg;
-      chatLog.appendChild(d);
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-    chatInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        const v = chatInput.value.trim();
-        if (v.startsWith('/connect ')) {
-          const id = v.slice(9).trim();
-          if (id && !connections[id]) {
-            setupConnection(peer.connect(id));
-            appendChat(`Connecting to ${id}...`);
-          }
-        } else if (v) {
-          appendChat(`You: ${v}`);
-          broadcast({ type:'chat', name: playerName, text: v });
-        }
-        chatInput.value = '';
+    // Chat UI
+    const chatContainer=document.getElementById('chat-container');
+    const chatLog=document.getElementById('chat-log');
+    const chatInput=document.getElementById('chat-input');
+    function appendChat(msg){const d=document.createElement('div');d.textContent=msg;chatLog.appendChild(d);chatLog.scrollTop=chatLog.scrollHeight;}
+    chatInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        const v=chatInput.value.trim();
+        if(v.startsWith('/connect ')){
+          const id=v.slice(9).trim();if(id&&!connections[id]){setupConnection(peer.connect(id));appendChat(`Connecting to ${id}...`);}        
+        } else if(v){appendChat(`You: ${v}`);broadcast({type:'chat',name:playerName,text:v});}
+        chatInput.value='';
       }
     });
-    document.addEventListener('keydown', e => {
-      if (e.key === 't' && document.activeElement !== chatInput) {
-        chatContainer.style.display = chatContainer.style.display === 'flex' ? 'none' : 'flex';
-        if (chatContainer.style.display === 'flex') chatInput.focus();
-        e.preventDefault();
+    document.addEventListener('keydown',e=>{
+      if(e.key==='t'&&document.activeElement!==chatInput){
+        chatContainer.style.display=chatContainer.style.display==='flex'?'none':'flex';
+        if(chatContainer.style.display==='flex')chatInput.focus();e.preventDefault();
       }
     });
 
-    // === Player Name ===
+    // Player Name
     const adjectives=['Brave','Cunning','Swift','Ancient','Mighty','Silent','Fierce','Gentle'];
     const nouns=['Lion','Wolf','Eagle','Dragon','Fox','Tiger','Bear','Hawk'];
-    function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-    const playerName = rand(adjectives)+rand(nouns)+Math.floor(Math.random()*1000);
+    function rand(arr){return arr[Math.floor(Math.random()*arr.length)];}
+    const playerName=rand(adjectives)+rand(nouns)+Math.floor(Math.random()*1000);
 
-    // === Three.js Setup ===
-    const scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({ antialias:true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    controls = new PointerLockControls(camera, document.body);
-    const instr = document.getElementById('instructions');
-    instr.addEventListener('click', () => controls.lock());
-    controls.addEventListener('lock', () => instr.style.display = 'none');
-    controls.addEventListener('unlock', () => instr.style.display = '');
+    // Three.js Init
+    const scene=new THREE.Scene();
+    camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
+    renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);document.body.appendChild(renderer.domElement);
+    controls=new PointerLockControls(camera,document.body);
+    document.getElementById('instructions').addEventListener('click',()=>controls.lock());
+    controls.addEventListener('lock',()=>document.getElementById('instructions').style.display='none');
+    controls.addEventListener('unlock',()=>document.getElementById('instructions').style.display='');
     scene.add(new THREE.AmbientLight(0xffffff,0.6));
-    const sun = new THREE.DirectionalLight(0xffffff,0.6);
-    sun.position.set(100,100,50); scene.add(sun);
+    const sun=new THREE.DirectionalLight(0xffffff,0.6);sun.position.set(100,100,50);scene.add(sun);
 
-    // === Terrain Generation ===
-    const boxGeom = new THREE.BoxBufferGeometry(1,1,1);
-    const grassM = [0x964B00,0x964B00,0x00ff00,0x964B00,0x964B00,0x964B00].map(c=>new THREE.MeshLambertMaterial({color:c}));
-    const dirtM = Array(6).fill().map(()=>new THREE.MeshLambertMaterial({color:0x964B00}));
-    const stoneM = Array(6).fill().map(()=>new THREE.MeshLambertMaterial({color:0x888888}));
-    const noise = new SimplexNoise(); const scale=0.1;
-    const W=32,D=32,H=16; const blocks={};
-    for(let x=-W/2;x<W/2;x++) for(let z=-D/2;z<D/2;z++){
-      const h = Math.floor((noise.noise2D(x*scale,z*scale)+1)/2*(H-1))+1;
-      for(let y=0;y<h;y++){
-        const depth = h-y;
-        const mats = depth===1?grassM:depth<=4?dirtM:stoneM;
-        const m = new THREE.Mesh(boxGeom,mats);
-        m.position.set(x+0.5,y+0.5,z+0.5);
-        scene.add(m);
-        blocks[`${x},${y},${z}`] = m;
-      }
-    }
+    // Terrain
+    const boxG=new THREE.BoxBufferGeometry(1,1,1);
+    const grassC=[0x964B00,0x964B00,0x00ff00,0x964B00,0x964B00,0x964B00].map(c=>new THREE.MeshLambertMaterial({color:c}));
+    const dirtC=Array(6).fill().map(()=>new THREE.MeshLambertMaterial({color:0x964B00}));
+    const stoneC=Array(6).fill().map(()=>new THREE.MeshLambertMaterial({color:0x888888}));
+    const noise=new SimplexNoise(), sc=0.1;
+    const W=32,D=32,H=16,blocks={};
+    for(let x=-W/2;x<W/2;x++)for(let z=-D/2;z<D/2;z++){
+      const h=Math.floor((noise.noise2D(x*sc,z*sc)+1)/2*(H-1))+1;
+      for(let y=0;y<h;y++){const d=h-y;const mats=d===1?grassC:d<=4?dirtC:stoneC;
+        const m=new THREE.Mesh(boxG,mats);m.position.set(x+0.5,y+0.5,z+0.5);scene.add(m);blocks[`${x},${y},${z}`]=m;} }
 
-    // === Collision & Movement ===
-    function coll(px,pz,py){
-      const foot = Math.floor(py-1.6+0.1), head = Math.floor(py-0.1);
-      return blocks[`${Math.floor(px)},${foot},${Math.floor(pz)}`]||blocks[`${Math.floor(px)},${head},${Math.floor(pz)}`];
-    }
-    const vel = new THREE.Vector3(), dir = new THREE.Vector3();
-    const move = {fw:false,back:false,left:false,right:false}; let canJump=false;
-    const walkAccel=150, jumpSpeed=20, gravity=100, friction=15;
-    const km = {KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
-    document.addEventListener('keydown', e=>{ if(e.code in km) move[km[e.code]]=true; if(e.code==='Space'&&canJump){vel.y=jumpSpeed;canJump=false;} });
-    document.addEventListener('keyup', e=>{ if(e.code in km) move[km[e.code]]=false; });
-    const ray = new THREE.Raycaster();
-    document.addEventListener('mousedown', e=>{
-      ray.setFromCamera({x:0,y:0},camera);
-      const hit = ray.intersectObjects(Object.values(blocks))[0]; if(!hit) return;
-      const pos = hit.object.position.clone().subScalar(0.5);
-      const n = hit.face.normal;
-      const bx=Math.floor(pos.x), by=Math.floor(pos.y), bz=Math.floor(pos.z);
-      if(e.button===0){ scene.remove(blocks[`${bx},${by},${bz}`]); delete blocks[`${bx},${by},${bz}`]; }
-      else { const key=`${bx+n.x},${by+n.y},${bz+n.z}`; if(!blocks[key]){
-        const m = new THREE.Mesh(boxGeom,dirtM); m.position.set(bx+n.x+0.5,by+n.y+0.5,bz+n.z+0.5);
-        scene.add(m); blocks[key]=m; }
-      }
-    });
-    document.addEventListener('contextmenu', e=>e.preventDefault());
+    // Ground height helper
+    function groundHeight(x,z){let maxY=-Infinity;for(const k in blocks){const [bx,by,bz]=k.split(',').map(Number);if(bx===Math.floor(x)&&bz===Math.floor(z)&&by>maxY)maxY=by;}return maxY===-Infinity?1.6:maxY+1+1.6;}
 
-    // === Pickaxe ===
-    const pick = new THREE.Group();
-    const hm = new THREE.Mesh(new THREE.BoxBufferGeometry(0.1,1,0.1),new THREE.MeshLambertMaterial({color:0x8B4513})); hm.position.set(0,-0.5,0); pick.add(hm);
-    const hd = new THREE.Mesh(new THREE.BoxBufferGeometry(0.6,0.1,0.1),new THREE.MeshLambertMaterial({color:0xcccccc})); hd.position.set(0,-1,0); hd.rotateZ(Math.PI/2); pick.add(hd);
-    scene.add(pick);
+    // Movement
+    const vel=new THREE.Vector3(),dir=new THREE.Vector3(),move={fw:false,back:false,left:false,right:false};let canJump=false;
+    const walkAccel=150,jumpSpeed=20,gravity=100,fric=15;
+    const km={KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
+    document.addEventListener('keydown',e=>{if(e.code in km)move[km[e.code]]=true; if(e.code==='Space'&&canJump){vel.y=jumpSpeed;canJump=false;}});
+    document.addEventListener('keyup',e=>{if(e.code in km)move[km[e.code]]=false;});
+    const ray=new THREE.Raycaster();document.addEventListener('mousedown',e=>{ray.setFromCamera({x:0,y:0},camera);const hit=ray.intersectObjects(Object.values(blocks))[0];if(!hit)return;const p=hit.object.position.clone().subScalar(0.5),n=hit.face.normal;const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);if(e.button===0){scene.remove(blocks[`${bx},${by},${bz}`]);delete blocks[`${bx},${by},${bz}`];}else{const key=`${bx+n.x},${by+n.y},${bz+n.z}`;if(!blocks[key]){const m=new THREE.Mesh(boxG,dirtC);m.position.set(bx+n.x+0.5,by+n.y+0.5,bz+n.z+0.5);scene.add(m);blocks[key]=m;}}});document.addEventListener('contextmenu',e=>e.preventDefault());
 
-    // === Other Players ===
-    const others={}; const tex=new THREE.TextureLoader().load('grant_scary.png');
-    function getO(id){ if(!others[id]){ const mat=new THREE.SpriteMaterial({map:tex}); const s=new THREE.Sprite(mat); scene.add(s); others[id]=s;} return others[id]; }
-    function updateOther(id,d){ getO(id).position.set(d.x,d.y,d.z); }
-    setInterval(()=> broadcast({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z}),100);
+    // Pickaxe
+    const pick=new THREE.Group();const hm=new THREE.Mesh(new THREE.BoxBufferGeometry(0.1,1,0.1),new THREE.MeshLambertMaterial({color:0x8B4513}));hm.position.set(0,-0.5,0);pick.add(hm);const hd=new THREE.Mesh(new THREE.BoxBufferGeometry(0.6,0.1,0.1),new THREE.MeshLambertMaterial({color:0xcccccc}));hd.position.set(0,-1,0);hd.rotateZ(Math.PI/2);pick.add(hd);scene.add(pick);
 
-    // === Animate ===
-    const clock=new THREE.Clock();
-    camera.position.set(0,(Math.max(...Object.keys(blocks).map(k=>Number(k.split(',')[1])))+1.6),0);
-    (function animate(){ const dt=clock.getDelta(); requestAnimationFrame(animate);
-      if(controls.isLocked){
-        vel.y-=gravity*dt;
-        dir.z=(move.fw?1:0)-(move.back?1:0);
-        dir.x=(move.right?1:0)-(move.left?1:0);
-        dir.normalize(); if(move.fw||move.back) vel.z-=dir.z*walkAccel*dt; if(move.left||move.right) vel.x-=dir.x*walkAccel*dt;
-        vel.x-=vel.x*friction*dt; vel.z-=vel.z*friction*dt;
-        const ox=camera.position.x, oz=camera.position.z;
-        controls.moveRight(-vel.x*dt); if(coll(camera.position.x,camera.position.z,camera.position.y)) camera.position.x=ox;
-        controls.moveForward(-vel.z*dt); if(coll(camera.position.x,camera.position.z,camera.position.y)) camera.position.z=oz;
-        camera.position.y+=vel.y*dt;
-        const fy=Math.floor(camera.position.y-1.6);
-        if(blocks[`${Math.floor(camera.position.x)},${fy},${Math.floor(camera.position.z)}`]){ camera.position.y=fy+1.6; vel.y=0; canJump=true; }
-      }
-      pick.position.copy(camera.position); pick.quaternion.copy(camera.quaternion); pick.translateX(0.5); pick.translateY(-0.5); pick.translateZ(-1);
-      renderer.render(scene,camera);
-    })();
-    window.addEventListener('resize',()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
+    // Others
+    const others={};const tex=new THREE.TextureLoader().load('grant_scary.png');function getO(id){if(!others[id]){const mat=new THREE.SpriteMaterial({map:tex});const s=new THREE.Sprite(mat);scene.add(s);others[id]=s;}return others[id];}function updateOther(id,d){getO(id).position.set(d.x,d.y,d.z);}setInterval(()=>broadcast({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z}),100);
+
+    // Animate
+    const clock=new THREE.Clock();camera.position.set(0,groundHeight(0,0),0);
+    (function animate(){const dt=clock.getDelta();requestAnimationFrame(animate);if(controls.isLocked){vel.y-=gravity*dt;dir.z=(move.fw?1:0)-(move.back?1:0);dir.x=(move.right?1:0)-(move.left?1:0);dir.normalize();if(move.fw||move.back)vel.z-=dir.z*walkAccel*dt;if(move.left||move.right)vel.x-=dir.x*walkAccel*dt;vel.x-=vel.x*fric*dt;vel.z-=vel.z*fric*dt;const ox=camera.position.x,oz=camera.position.z;controls.moveRight(-vel.x*dt);if(colliding){}controls.moveForward(-vel.z*dt);if(colliding){}camera.position.y+=vel.y*dt;const gh=groundHeight(camera.position.x,camera.position.z);if(camera.position.y<gh){camera.position.y=gh;vel.y=0;canJump=true;}}pick.position.copy(camera.position);pick.quaternion.copy(camera.quaternion);pick.translateX(0.5);pick.translateY(-0.5);pick.translateZ(-1);renderer.render(scene,camera);})();
+    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
   </script>
 </body>
 </html>
