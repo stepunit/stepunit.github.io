@@ -66,6 +66,7 @@
     const move = { forward: false, backward: false, left: false, right: false };
     const NPC_COUNT = 50;
     const FLOOR_SIZE = 50;
+    const COLLISION_RADIUS = 0.5; // threshold for touch
 
     init();
     animate();
@@ -162,7 +163,6 @@
       if (gameOver) return;
       const delta = 0.1;
 
-      // NPC movement and panic logic
       npcs.forEach(npc => {
         const data = npc.userData;
         if (!data.panic && Math.random() < 0.002) {
@@ -187,10 +187,10 @@
         }
       });
 
-      // Collision detection
+      // Collision detection with smaller radius
       const playerPos = controls.getObject().position;
       for (const npc of npcs) {
-        if (npc.position.distanceTo(playerPos) < 1) {
+        if (npc.position.distanceTo(playerPos) < COLLISION_RADIUS) {
           gameOver = true;
           gameoverDiv.style.display = 'flex';
           controls.unlock();
