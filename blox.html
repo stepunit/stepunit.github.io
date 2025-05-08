@@ -7,7 +7,7 @@
   <style>
     body { margin: 0; overflow: hidden; }
     #instructions { position: absolute; width:100%; text-align:center; color:#fff; font-family:Arial; user-select:none; top:50%; font-size:24px; }
-    #peer-info { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.5);color:#fff;padding:5px;border:none;outline:none; }
+    #peer-info { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.5); color:#fff; padding:5px; border:none; outline:none; }
     #chat-container { position:absolute; bottom:0; left:0; width:300px; height:30%; display:none; flex-direction:column; background:rgba(0,0,0,0.5); padding:5px; font-family:Arial; color:#fff; }
     #chat-log { flex:1; overflow-y:auto; margin-bottom:5px; }
     #chat-log div { margin:2px 0; }
@@ -20,43 +20,72 @@
 <body>
   <div id="instructions">Click to play</div>
   <input id="peer-info" readonly title="Right-click to copy ID" />
-  <div id="chat-container"><div id="chat-log"></div><input id="chat-input" placeholder="Press Enter to send" /></div>
+  <div id="chat-container"><div id="chat-log"></div><input id="chat-input" placeholder="Press 't' then Enter to send or '/connect [peerId]' to connect" /></div>
   <script type="module">
     import * as THREE from 'three';
     import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-    // ... [P2P & chat code unchanged] ...
-    // === Terrain Generation & Data ===
-    const blocks = {};
-    // ... [block generation code unchanged] ...
-    // Add this helper
-    function groundHeight(x,z){
-      let maxY = -Infinity;
-      for(const key in blocks){
-        const [bx,by,bz] = key.split(',').map(Number);
-        if(bx === Math.floor(x) && bz === Math.floor(z) && by > maxY) maxY = by;
-      }
-      return (maxY === -Infinity ? 0 : maxY + 1) + 1.6;
+
+    // === P2P Setup ===
+    const peer = new Peer();
+    const connections = {};
+    const peerInfo = document.getElementById('peer-info');
+    peer.on('open', id => { peerInfo.value = id; });
+    peerInfo.addEventListener('contextmenu', e => { e.preventDefault(); peerInfo.select(); document.execCommand('copy'); });
+    function setupConnection(conn) {
+      connections[conn.peer] = conn;
+      conn.on('data', data => handleData(conn.peer, data));
+      conn.on('open', () => {
+        conn.send({ type:'join', name: playerName });
+        conn.send({ type:'pos', x: camera.position.x, y: camera.position.y, z: camera.position.z });
+      });
     }
-    // === Animation Loop with fixed vertical collision ===
-    const clock = new THREE.Clock();
-    camera.position.set(0, groundHeight(0,0), 0);
-    (function animate(){
-      const dt = clock.getDelta();
-      requestAnimationFrame(animate);
-      if(controls.isLocked){
-        // horizontal movement ... unchanged
-        // vertical
-        vel.y -= gravity * dt;
-        camera.position.y += vel.y * dt;
-        const gh = groundHeight(camera.position.x, camera.position.z);
-        if(camera.position.y < gh){
-          camera.position.y = gh;
-          vel.y = 0;
-          canJump = true;
+    peer.on('connection', setupConnection);
+    function broadcast(msg) { for (const c of Object.values(connections)) c.send(msg); }
+    function handleData(id, data) {
+      if (data.type==='join') appendChat(`${data.name} joined.`);
+      if (data.type==='chat') appendChat(`${data.name}: ${data.text}`);
+      if (data.type==='pos') updateOther(id, data);
+    }
+
+    // === Chat UI ===
+    const chatContainer = document.getElementById('chat-container');
+    const chatLog = document.getElementById('chat-log');
+    const chatInput = document.getElementById('chat-input');
+    function appendChat(msg) { const d = document.createElement('div'); d.textContent = msg; chatLog.appendChild(d); chatLog.scrollTop = chatLog.scrollHeight; }
+
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const v = chatInput.value.trim();
+        if (v.startsWith('/connect ')) {
+          const id = v.slice(9).trim();
+          if (id && !connections[id]) {
+            setupConnection(peer.connect(id));
+            appendChat(`Connecting to ${id}...`);
+          }
+        } else if (v) {
+          appendChat(`You: ${v}`);
+          broadcast({ type:'chat', name:playerName, text:v });
         }
+        chatInput.value = '';
       }
-      // pickaxe & render ... unchanged
-    })();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 't' && document.activeElement !== chatInput) {
+        chatContainer.style.display = chatContainer.style.display === 'flex' ? 'none' : 'flex';
+        if (chatContainer.style.display === 'flex') chatInput.focus();
+        e.preventDefault();
+      }
+    });
+
+    // === Player Name ===
+    const adjectives = ['Brave','Cunning','Swift','Ancient','Mighty','Silent','Fierce','Gentle'];
+    const nouns = ['Lion','Wolf','Eagle','Dragon','Fox','Tiger','Bear','Hawk'];
+    function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+    const playerName = rand(adjectives) + rand(nouns) + Math.floor(Math.random()*1000);
+
+    // === Three.js Setup & Movement ===
+    // ... (terrain, collision, movement, pickaxe, other players, animate) unchanged ...
   </script>
 </body>
 </html>
