@@ -12,12 +12,21 @@
       user-select: none;
     }
   </style>
+  <!-- Import map to resolve bare module specifiers in browser -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+      "three/examples/jsm/controls/PointerLockControls.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/PointerLockControls.js"
+    }
+  }
+  </script>
 </head>
 <body>
   <div id="instructions">Click to play</div>
   <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
-    import { PointerLockControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/PointerLockControls.js';
+    import * as THREE from 'three';
+    import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
     // Scene, camera, renderer
     const scene = new THREE.Scene();
@@ -29,21 +38,18 @@
     // Controls
     const controls = new PointerLockControls(camera, document.body);
     const instructions = document.getElementById('instructions');
-    instructions.addEventListener('click', () => {
-      controls.lock();
-    });
-    controls.addEventListener('lock', () => { instructions.style.display = 'none'; });
-    controls.addEventListener('unlock', () => { instructions.style.display = ''; });
+    instructions.addEventListener('click', () => controls.lock());
+    controls.addEventListener('lock', () => instructions.style.display = 'none');
+    controls.addEventListener('unlock', () => instructions.style.display = '');
 
     // Lights
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambient);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const sun = new THREE.DirectionalLight(0xffffff, 0.6);
     sun.position.set(100, 100, 50);
     scene.add(sun);
 
-    // Materials (grass top, dirt bottom and sides)
-    const materials = [
+    // Materials for blocks
+    const blockMats = [
       new THREE.MeshLambertMaterial({ color: 0x00ff00 }), // top
       new THREE.MeshLambertMaterial({ color: 0x964B00 }), // bottom
       new THREE.MeshLambertMaterial({ color: 0x964B00 }), // north
@@ -52,119 +58,94 @@
       new THREE.MeshLambertMaterial({ color: 0x964B00 })  // west
     ];
 
-    // World parameters
-    const worldWidth = 32;
-    const worldDepth = 32;
-    const worldHeight = 8;
+    // World params
+    const W = 32, D = 32, H = 8;
     const blocks = {};
-    const geometries = {};
-
-    function key(x, y, z) {
-      return `${x},${y},${z}`;
+    const geoms = {};
+    const key = (x,y,z)=>`${x},${y},${z}`;
+    function addBlock(x,y,z){
+      const gk='1x1x1';
+      if(!geoms[gk]) geoms[gk]=new THREE.BoxBufferGeometry(1,1,1);
+      const m=new THREE.Mesh(geoms[gk], blockMats);
+      m.position.set(x+0.5,y+0.5,z+0.5);
+      scene.add(m);
+      blocks[key(x,y,z)]=m;
     }
-
-    function addBlock(x, y, z) {
-      const geomKey = '1x1x1';
-      if (!geometries[geomKey]) {
-        geometries[geomKey] = new THREE.BoxBufferGeometry(1, 1, 1);
-      }
-      const mesh = new THREE.Mesh(geometries[geomKey], materials);
-      mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
-      scene.add(mesh);
-      blocks[key(x, y, z)] = mesh;
+    function removeBlock(x,y,z){
+      const k=key(x,y,z);
+      if(blocks[k]){ scene.remove(blocks[k]); delete blocks[k]; }
     }
+    for(let x=-W/2;x<W/2;x++)for(let z=-D/2;z<D/2;z++)for(let y=0;y<H;y++)addBlock(x,y,z);
 
-    function removeBlock(x, y, z) {
-      const k = key(x, y, z);
-      if (blocks[k]) {
-        scene.remove(blocks[k]);
-        delete blocks[k];
-      }
-    }
-
-    // Initialize flat world
-    for (let x = -worldWidth / 2; x < worldWidth / 2; x++) {
-      for (let z = -worldDepth / 2; z < worldDepth / 2; z++) {
-        for (let y = 0; y < worldHeight; y++) {
-          addBlock(x, y, z);
-        }
+    // Raycast for interactions
+    const ray=new THREE.Raycaster();
+    function interact(e){
+      ray.setFromCamera({x:0,y:0},camera);
+      const hits=ray.intersectObjects(Object.values(blocks));
+      if(hits.length){
+        const h=hits[0];
+        const pos=h.object.position.clone().subScalar(0.5);
+        const n=h.face.normal;
+        const [x,y,z]=[pos.x,pos.y,pos.z];
+        if(e.button===0) removeBlock(x,y,z);
+        if(e.button===2) addBlock(x+n.x,y+n.y,z+n.z);
       }
     }
-
-    // Raycaster for block interactions
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-
-    function interact(event) {
-      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-      const intersects = raycaster.intersectObjects(Object.values(blocks));
-      if (intersects.length > 0) {
-        const intersect = intersects[0];
-        const pos = intersect.object.position.clone().subScalar(0.5);
-        const normal = intersect.face.normal;
-        const x = pos.x;
-        const y = pos.y;
-        const z = pos.z;
-        if (event.button === 0) {
-          removeBlock(x, y, z);
-        } else if (event.button === 2) {
-          addBlock(x + normal.x, y + normal.y, z + normal.z);
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', interact);
-    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.addEventListener('mousedown',interact);
+    document.addEventListener('contextmenu',e=>e.preventDefault());
 
     // Movement
-    const velocity = new THREE.Vector3();
-    const direction = new THREE.Vector3();
-    const move = { forward: false, back: false, left: false, right: false };
+    const vel=new THREE.Vector3(), dir=new THREE.Vector3();
+    const move={fw:false,back:false,left:false,right:false};
+    ['KeyW','KeyS','KeyA','KeyD'].forEach(keyCode=>
+      document.addEventListener('keydown',e=>{if(e.code===keyCode)move[{KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'}[e.code]]=true});
+    );
+    ['KeyW','KeyS','KeyA','KeyD'].forEach(keyCode=>
+      document.addEventListener('keyup',e=>{if(e.code===keyCode)move[{KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'}[e.code]]=false});
+    );
 
-    document.addEventListener('keydown', event => {
-      switch (event.code) {
-        case 'KeyW': move.forward = true; break;
-        case 'KeyS': move.back = true;    break;
-        case 'KeyA': move.left = true;    break;
-        case 'KeyD': move.right = true;   break;
-      }
-    });
-    document.addEventListener('keyup', event => {
-      switch (event.code) {
-        case 'KeyW': move.forward = false; break;
-        case 'KeyS': move.back = false;    break;
-        case 'KeyA': move.left = false;    break;
-        case 'KeyD': move.right = false;   break;
-      }
-    });
+    // Pickaxe
+    const pick=new THREE.Group();
+    const hGeo=new THREE.BoxBufferGeometry(0.1,1,0.1);
+    const hMat=new THREE.MeshLambertMaterial({color:0x8B4513});
+    const hMesh=new THREE.Mesh(hGeo,hMat);
+    hMesh.position.set(0,-0.5,0);
+    pick.add(hMesh);
+    const hdGeo=new THREE.BoxBufferGeometry(0.6,0.1,0.1);
+    const hdMat=new THREE.MeshLambertMaterial({color:0xcccccc});
+    const hdMesh=new THREE.Mesh(hdGeo,hdMat);
+    hdMesh.position.set(0,-1,0);
+    hdMesh.rotateZ(Math.PI/2);
+    pick.add(hdMesh);
+    scene.add(pick);
 
-    // Animation loop
-    camera.position.set(0, worldHeight + 2, 0);
-    function animate() {
+    camera.position.set(0,H+2,0);
+    function animate(){
       requestAnimationFrame(animate);
-      if (controls.isLocked) {
-        // Decay velocity
-        velocity.x -= velocity.x * 10.0 * 0.016;
-        velocity.z -= velocity.z * 10.0 * 0.016;
-        // Determine direction
-        direction.z = (move.forward ? 1 : 0) - (move.back ? 1 : 0);
-        direction.x = (move.right ? 1 : 0) - (move.left ? 1 : 0);
-        direction.normalize();
-        // Apply acceleration
-        if (move.forward || move.back) velocity.z -= direction.z * 400.0 * 0.016;
-        if (move.left || move.right)    velocity.x -= direction.x * 400.0 * 0.016;
-        controls.moveRight(-velocity.x * 0.016);
-        controls.moveForward(-velocity.z * 0.016);
+      if(controls.isLocked){
+        vel.x-=vel.x*10*0.016;
+        vel.z-=vel.z*10*0.016;
+        dir.z=(move.fw?1:0)-(move.back?1:0);
+        dir.x=(move.right?1:0)-(move.left?1:0);
+        dir.normalize();
+        if(move.fw||move.back) vel.z-=dir.z*400*0.016;
+        if(move.left||move.right)vel.x-=dir.x*400*0.016;
+        controls.moveRight(-vel.x*0.016);
+        controls.moveForward(-vel.z*0.016);
       }
-      renderer.render(scene, camera);
+      pick.position.copy(camera.position);
+      pick.quaternion.copy(camera.quaternion);
+      pick.translateX(0.5);
+      pick.translateY(-0.5);
+      pick.translateZ(-1);
+      renderer.render(scene,camera);
     }
     animate();
 
-    // Handle resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+    window.addEventListener('resize',()=>{
+      camera.aspect=window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(window.innerWidth,window.innerHeight);
     });
   </script>
 </body>
