@@ -34,9 +34,9 @@
     import * as THREE from 'three';
     import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
-    // P2P with PeerJS
+    // P2P networking
     const peer = new Peer();
-    const connections = {}, playerNames = {};
+    const connections = {};
     peer.on('open', id => document.getElementById('peer-info').textContent = `Your Peer ID: ${id}`);
     document.getElementById('connect').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
@@ -50,156 +50,153 @@
       connections[conn.peer] = conn;
       conn.on('data', data => {
         if (data.type === 'pos') updateOther(conn.peer, data);
-        if (data.type === 'join') playerNames[conn.peer] = data.name;
       });
-      conn.on('open', () => conn.send({ type: 'join', name: playerName }));
+      conn.on('open', () => conn.send({ type:'pos', x:camera.position.x, y:camera.position.y, z:camera.position.z }));
     }
     function broadcast(msg) { Object.values(connections).forEach(c => c.send(msg)); }
 
-    // Random name
+    // Random name (unused visually)
     const adjectives=['Brave','Cunning','Swift','Ancient','Mighty','Silent','Fierce','Gentle'];
     const nouns=['Lion','Wolf','Eagle','Dragon','Fox','Tiger','Bear','Hawk'];
-    function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+    function rand(a){return a[Math.floor(Math.random()*a.length)];}
     const playerName = rand(adjectives)+rand(nouns)+Math.floor(Math.random()*1000);
 
-    // Three.js init
+    // Three.js setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Controls and lighting
+    // Controls & light
     const controls = new PointerLockControls(camera, document.body);
     const instr = document.getElementById('instructions');
-    instr.addEventListener('click', () => controls.lock());
-    controls.addEventListener('lock', () => instr.style.display='none');
-    controls.addEventListener('unlock', () => instr.style.display='');
+    instr.addEventListener('click', ()=> controls.lock());
+    controls.addEventListener('lock', ()=> instr.style.display='none');
+    controls.addEventListener('unlock', ()=> instr.style.display='');
     scene.add(new THREE.AmbientLight(0xffffff,0.6));
     const sun = new THREE.DirectionalLight(0xffffff,0.6);
     sun.position.set(100,100,50);
     scene.add(sun);
 
-    // Materials & terrain
-    const grass = [
-      new THREE.MeshLambertMaterial({color:0x964B00}),
-      new THREE.MeshLambertMaterial({color:0x964B00}),
-      new THREE.MeshLambertMaterial({color:0x00ff00}),
-      new THREE.MeshLambertMaterial({color:0x964B00}),
-      new THREE.MeshLambertMaterial({color:0x964B00}),
-      new THREE.MeshLambertMaterial({color:0x964B00})
-    ];
-    const dirt = Array(6).fill().map(()=> new THREE.MeshLambertMaterial({color:0x964B00}));
-    const stone = Array(6).fill().map(()=> new THREE.MeshLambertMaterial({color:0x888888}));
+    // Terrain materials
+    const grassFaces = [1,1,0,1,1,1]; // top=green(0x00ff00), others brown(0x964B00)
+    const grassMats = grassFaces.map(f=> new THREE.MeshLambertMaterial({color:f?0x964B00:0x00ff00}));
+    const dirtMats = Array(6).fill().map(()=> new THREE.MeshLambertMaterial({color:0x964B00}));
+    const stoneMats = Array(6).fill().map(()=> new THREE.MeshLambertMaterial({color:0x888888}));
 
+    // Procedural noise
     const simplex = new SimplexNoise();
-    const noiseScale=0.1;
+    const noiseScale = 0.1;
     const W=32,D=32,H=16;
-    const blocks={}, geoms={};
-    const key=(x,y,z)=>`${x},${y},${z}`;
+    const blocks = {};
+    let boxGeom;
     function addBlock(x,y,z,mats){
-      const gk='1x1x1'; if(!geoms[gk]) geoms[gk]=new THREE.BoxBufferGeometry(1,1,1);
-      const m=new THREE.Mesh(geoms[gk], mats);
+      if(!boxGeom) boxGeom=new THREE.BoxBufferGeometry(1,1,1);
+      const m = new THREE.Mesh(boxGeom, mats);
       m.position.set(x+0.5,y+0.5,z+0.5);
       scene.add(m);
-      blocks[key(x,y,z)] = m;
+      blocks[`${x},${y},${z}`]=m;
     }
-    // generate
     for(let x=-W/2;x<W/2;x++){
       for(let z=-D/2;z<D/2;z++){
-        const h = Math.floor((simplex.noise2D(x*noiseScale, z*noiseScale)+1)/2 * (H-1))+1;
-        for(let y=0;y<h;y++){
-          const depth=h-y;
-          let mats = depth===1 ? grass : depth<=4 ? dirt : stone;
+        const height=Math.floor((simplex.noise2D(x*noiseScale,z*noiseScale)+1)/2*(H-1))+1;
+        for(let y=0;y<height;y++){
+          const d=height-y;
+          const mats = d===1?grassMats:(d<=4?dirtMats:stoneMats);
           addBlock(x,y,z,mats);
         }
       }
     }
 
-    // ray interaction
-    const ray=new THREE.Raycaster();
-    document.addEventListener('mousedown', e=>{
-      ray.setFromCamera({x:0,y:0}, camera);
-      const hit=ray.intersectObjects(Object.values(blocks))[0];
-      if(hit){ const pos=hit.object.position.clone().subScalar(0.5); const n=hit.face.normal;
-        const [bx,by,bz]=[pos.x,pos.y,pos.z];
-        if(e.button===0){ scene.remove(blocks[key(bx,by,bz)]); delete blocks[key(bx,by,bz)]; }
-        if(e.button===2) addBlock(bx+n.x,by+n.y,bz+n.z, dirt);
-      }
-    });
-    document.addEventListener('contextmenu', e=>e.preventDefault());
+    // Collision check
+    function isSolid(x,z,y){return blocks[`${Math.floor(x)},${y},${Math.floor(z)}`]!=null;}
+    function colliding(px,pz,py){
+      const footY=Math.floor(py-1.6+0.1);
+      const headY=Math.floor(py-0.1);
+      return isSolid(px,pz,footY)||isSolid(px,pz,headY);
+    }
 
-    // movement
-    const velocity=new THREE.Vector3(), dir=new THREE.Vector3();
+    // Movement
+    const velocity=new THREE.Vector3();
+    const direction=new THREE.Vector3();
     const move={fw:false,back:false,left:false,right:false};
     let canJump=false;
-    const walkAccel=100, jumpSpeed=200, gravity=400, friction=10;
+    const walkAccel=150, jumpSpeed=20, gravity=100, friction=15;
     const km={KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'};
-    document.addEventListener('keydown', e=>{
+    document.addEventListener('keydown',e=>{
       if(e.code in km) move[km[e.code]]=true;
-      if(e.code==='Space' && canJump){ velocity.y=jumpSpeed; canJump=false; }
+      if(e.code==='Space'&&canJump){velocity.y=jumpSpeed;canJump=false;}
     });
-    document.addEventListener('keyup', e=>{ if(e.code in km) move[km[e.code]]=false; });
+    document.addEventListener('keyup',e=>{if(e.code in km) move[km[e.code]]=false;});
 
-    // P2P updates
-    const otherPlayers={};
-    const spriteMap=new THREE.TextureLoader().load('grant_scary.png');
-    function getOrCreateSprite(id){ if(!otherPlayers[id]){
-        const mat=new THREE.SpriteMaterial({map: spriteMap});
-        const s=new THREE.Sprite(mat); scene.add(s); otherPlayers[id]=s;
-      } return otherPlayers[id];
-    }
-    function updateOther(id, {x,y,z}){ getOrCreateSprite(id).position.set(x,y,z); }
-    setInterval(()=> broadcast({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z}),50);
-
-    // get ground height at x,z
-    function getGroundHeight(x,z){
-      const ix=Math.floor(x), iz=Math.floor(z);
-      let maxY=-Infinity;
-      for(const k in blocks){ const [bx,by,bz]=k.split(',').map(Number);
-        if(bx===ix && bz===iz && by>maxY) maxY=by;
+    // Ray for digging/placing
+    const ray=new THREE.Raycaster();
+    document.addEventListener('mousedown',e=>{
+      ray.setFromCamera({x:0,y:0},camera);
+      const hit=ray.intersectObjects(Object.values(blocks))[0];
+      if(hit){
+        const pos=hit.object.position.clone().subScalar(0.5);
+        const n=hit.face.normal;
+        const bx=Math.floor(pos.x),by=Math.floor(pos.y),bz=Math.floor(pos.z);
+        if(e.button===0){scene.remove(blocks[`${bx},${by},${bz}`]);delete blocks[`${bx},${by},${bz}`];}
+        if(e.button===2){const k=`${bx+n.x},${by+n.y},${bz+n.z}`;if(!blocks[k])addBlock(bx+n.x,by+n.y,bz+n.z,dirtMats);}
       }
-      return isFinite(maxY)? maxY+1 : 0;
-    }
+    });
+    document.addEventListener('contextmenu',e=>e.preventDefault());
 
-    // animate
+    // Pickaxe
+    const pick=new THREE.Group();
+    const handle=new THREE.Mesh(new THREE.BoxBufferGeometry(0.1,1,0.1),new THREE.MeshLambertMaterial({color:0x8B4513}));
+    handle.position.set(0,-0.5,0);pick.add(handle);
+    const head=new THREE.Mesh(new THREE.BoxBufferGeometry(0.6,0.1,0.1),new THREE.MeshLambertMaterial({color:0xcccccc}));
+    head.position.set(0,-1,0);head.rotateZ(Math.PI/2);pick.add(head);
+    scene.add(pick);
+
+    // Other players
+    const others={},spriteTex=new THREE.TextureLoader().load('grant_scary.png');
+    function getOther(id){if(!others[id]){const m=new THREE.SpriteMaterial({map:spriteTex});const s=new THREE.Sprite(m);scene.add(s);others[id]=s;}return others[id];}
+    function updateOther(id,{x,y,z}){getOther(id).position.set(x,y,z);}
+    setInterval(()=>broadcast({type:'pos',x:camera.position.x,y:camera.position.y,z:camera.position.z}),100);
+
+    // Ground height helper
+    function groundHeight(x,z){let max=-Infinity;for(const k in blocks){const [bx,by,bz]=k.split(',').map(Number);if(bx===Math.floor(x)&&bz===Math.floor(z)&&by>max)max=by;}return max===-Infinity?0:max+1;}
+
+    // Animate
     const clock=new THREE.Clock();
-    camera.position.set(0, getGroundHeight(0,0)+1.6, 0);
+    camera.position.set(0,groundHeight(0,0)+1.6,0);
     function animate(){
-      const dt=clock.getDelta(); requestAnimationFrame(animate);
+      const dt=clock.getDelta();requestAnimationFrame(animate);
       if(controls.isLocked){
-        // apply gravity
-        velocity.y -= gravity*dt;
-        // horizontal accel
-        dir.z=(move.fw?1:0)-(move.back?1:0);
-        dir.x=(move.right?1:0)-(move.left?1:0);
-        dir.normalize();
-        if(move.fw||move.back) velocity.z -= dir.z*walkAccel*dt;
-        if(move.left||move.right) velocity.x -= dir.x*walkAccel*dt;
-        // friction
-        velocity.x -= velocity.x*friction*dt;
-        velocity.z -= velocity.z*friction*dt;
-        // move
+        velocity.y-=gravity*dt;
+        direction.z=(move.fw?1:0)-(move.back?1:0);
+        direction.x=(move.right?1:0)-(move.left?1:0);
+        direction.normalize();
+        if(move.fw||move.back)velocity.z-=direction.z*walkAccel*dt;
+        if(move.left||move.right)velocity.x-=direction.x*walkAccel*dt;
+        velocity.x-=velocity.x*friction*dt;
+        velocity.z-=velocity.z*friction*dt;
+        // horizontal X
+        const oldX=camera.position.x;
         controls.moveRight(-velocity.x*dt);
+        if(colliding(camera.position.x,camera.position.z,camera.position.y))camera.position.x=oldX;
+        // horizontal Z
+        const oldZ=camera.position.z;
         controls.moveForward(-velocity.z*dt);
+        if(colliding(camera.position.x,camera.position.z,camera.position.y))camera.position.z=oldZ;
         // vertical
-        camera.position.y += velocity.y*dt;
-        // ground collision
+        camera.position.y+=velocity.y*dt;
         const eye=1.6;
-        const gh=getGroundHeight(camera.position.x,camera.position.z)+eye;
-        if(camera.position.y<gh){ camera.position.y=gh; velocity.y=0; canJump=true; }
+        const gh=groundHeight(camera.position.x,camera.position.z)+eye;
+        if(camera.position.y<gh){camera.position.y=gh;velocity.y=0;canJump=true;}
       }
-      // pickaxe
-      pick.position.copy(camera.position); pick.quaternion.copy(camera.quaternion);
-      pick.translateX(0.5); pick.translateY(-0.5); pick.translateZ(-1);
+      pick.position.copy(camera.position);pick.quaternion.copy(camera.quaternion);
+      pick.translateX(0.5);pick.translateY(-0.5);pick.translateZ(-1);
       renderer.render(scene,camera);
     }
     animate();
 
-    window.addEventListener('resize', ()=>{
-      camera.aspect=window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);
-    });
+    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
   </script>
 </body>
 </html>
