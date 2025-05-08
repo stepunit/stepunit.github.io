@@ -87,7 +87,7 @@
       floor.rotation.x = -Math.PI / 2;
       scene.add(floor);
 
-      // Surrounding city box
+      // Surrounding room
       const room = new THREE.Mesh(
         new THREE.BoxGeometry(FLOOR_SIZE, 30, FLOOR_SIZE),
         new THREE.MeshLambertMaterial({ color: 0x222244, side: THREE.BackSide })
@@ -95,22 +95,36 @@
       room.position.y = 15;
       scene.add(room);
 
-                        // Load Milan scene glTF (with external textures in ./textures/)
+      // Load Milan scene from GLTF (textures folder used automatically)
+            // Load Milan scene from GLTF (textures folder used automatically)
       const gltfLoader = new GLTFLoader();
       gltfLoader.load(
         'scene.gltf',
         gltf => {
-          const milanScene = gltf.scene;
-          milanScene.scale.set(0.1, 0.1, 0.1); // adjust scale as needed
-          milanScene.position.set(0, 0, 0);
-          scene.add(milanScene);
+          console.log('GLTF loaded', gltf);
+          const model = gltf.scene;
+          // Scale and position adjustments
+          model.scale.set(1, 1, 1);
+          model.position.set(0, 0, 0);
+          scene.add(model);
+          // Ensure camera looks at the model
+          camera.lookAt(model.position);
+        },
+        xhr => {
+          console.log(`Loading model: ${(xhr.loaded / xhr.total * 100).toFixed(2)}% loaded`);
+        },
+        err => console.error('Failed to load scene.gltf', err)
+      );
         },
         undefined,
-        error => console.error('Error loading Milan scene:', error)
+        err => console.error('Error loading Milan scene:', err)
+      );
+        },
+        undefined,
+        err => console.error('Failed to load scene.gltf', err)
       );
 
       // Controls
-
       controls = new PointerLockControls(camera, renderer.domElement);
       document.body.addEventListener('click', () => controls.lock());
       scene.add(controls.getObject());
@@ -121,8 +135,8 @@
       // NPC sprites
       const npcTexture = textureLoader.load('grant_scary.png');
       for (let i = 0; i < NPC_COUNT; i++) {
-        const mat = new THREE.SpriteMaterial({ map: npcTexture, transparent: true });
-        const npc = new THREE.Sprite(mat);
+        const material = new THREE.SpriteMaterial({ map: npcTexture, transparent: true });
+        const npc = new THREE.Sprite(material);
         npc.scale.set(1, 3.6, 1);
         npc.position.set(
           (Math.random() - 0.5) * (FLOOR_SIZE - 20),
