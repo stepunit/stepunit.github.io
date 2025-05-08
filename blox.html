@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Three.js P2P Minecraft Clone with Chat</title>
-  <style>
+  <style>/* Styles unchanged */
     body { margin: 0; overflow: hidden; }
     #instructions { position: absolute; width:100%; text-align:center; color:#fff; font-family:Arial; user-select:none; top:50%; font-size:24px; }
     #peer-info { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.5); color:#fff; padding:5px; border:none; outline:none; }
@@ -25,6 +25,9 @@
     import * as THREE from 'three';
     import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
+    // Predeclare camera and controls for P2P
+    let camera, controls;
+
     // === P2P Setup ===
     const peer = new Peer();
     const connections = {};
@@ -35,8 +38,10 @@
       connections[conn.peer] = conn;
       conn.on('data', data => handleData(conn.peer, data));
       conn.on('open', () => {
-        conn.send({ type:'join', name: playerName });
-        conn.send({ type:'pos', x: camera.position.x, y: camera.position.y, z: camera.position.z });
+        if (camera) {
+          conn.send({ type:'join', name: playerName });
+          conn.send({ type:'pos', x: camera.position.x, y: camera.position.y, z: camera.position.z });
+        }
       });
     }
     peer.on('connection', setupConnection);
@@ -69,7 +74,6 @@
         chatInput.value = '';
       }
     });
-
     document.addEventListener('keydown', e => {
       if (e.key === 't' && document.activeElement !== chatInput) {
         chatContainer.style.display = chatContainer.style.display === 'flex' ? 'none' : 'flex';
@@ -85,7 +89,23 @@
     const playerName = rand(adjectives) + rand(nouns) + Math.floor(Math.random()*1000);
 
     // === Three.js Setup & Movement ===
-    // ... (terrain, collision, movement, pickaxe, other players, animate) unchanged ...
+    const scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    controls = new PointerLockControls(camera, document.body);
+    const instr = document.getElementById('instructions');
+    instr.addEventListener('click', () => controls.lock());
+    controls.addEventListener('lock', () => instr.style.display='none');
+    controls.addEventListener('unlock', () => instr.style.display='');
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+    sun.position.set(100,100,50); scene.add(sun);
+
+    // ...rest unchanged (terrain, collision, movement, pickaxe, animate)...
+
   </script>
 </body>
 </html>
