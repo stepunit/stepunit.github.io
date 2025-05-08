@@ -62,90 +62,97 @@
     const W = 32, D = 32, H = 8;
     const blocks = {};
     const geoms = {};
-    const key = (x,y,z)=>`${x},${y},${z}`;
-    function addBlock(x,y,z){
-      const gk='1x1x1';
-      if(!geoms[gk]) geoms[gk]=new THREE.BoxBufferGeometry(1,1,1);
-      const m=new THREE.Mesh(geoms[gk], blockMats);
-      m.position.set(x+0.5,y+0.5,z+0.5);
+    const key = (x, y, z) => `${x},${y},${z}`;
+    function addBlock(x, y, z) {
+      const gk = '1x1x1';
+      if (!geoms[gk]) geoms[gk] = new THREE.BoxBufferGeometry(1, 1, 1);
+      const m = new THREE.Mesh(geoms[gk], blockMats);
+      m.position.set(x + 0.5, y + 0.5, z + 0.5);
       scene.add(m);
-      blocks[key(x,y,z)]=m;
+      blocks[key(x, y, z)] = m;
     }
-    function removeBlock(x,y,z){
-      const k=key(x,y,z);
-      if(blocks[k]){ scene.remove(blocks[k]); delete blocks[k]; }
+    function removeBlock(x, y, z) {
+      const k = key(x, y, z);
+      if (blocks[k]) { scene.remove(blocks[k]); delete blocks[k]; }
     }
-    for(let x=-W/2;x<W/2;x++)for(let z=-D/2;z<D/2;z++)for(let y=0;y<H;y++)addBlock(x,y,z);
+    for (let x = -W / 2; x < W / 2; x++)
+      for (let z = -D / 2; z < D / 2; z++)
+        for (let y = 0; y < H; y++)
+          addBlock(x, y, z);
 
     // Raycast for interactions
-    const ray=new THREE.Raycaster();
-    function interact(e){
-      ray.setFromCamera({x:0,y:0},camera);
-      const hits=ray.intersectObjects(Object.values(blocks));
-      if(hits.length){
-        const h=hits[0];
-        const pos=h.object.position.clone().subScalar(0.5);
-        const n=h.face.normal;
-        const [x,y,z]=[pos.x,pos.y,pos.z];
-        if(e.button===0) removeBlock(x,y,z);
-        if(e.button===2) addBlock(x+n.x,y+n.y,z+n.z);
+    const ray = new THREE.Raycaster();
+    function interact(e) {
+      ray.setFromCamera({ x: 0, y: 0 }, camera);
+      const hits = ray.intersectObjects(Object.values(blocks));
+      if (hits.length) {
+        const h = hits[0];
+        const pos = h.object.position.clone().subScalar(0.5);
+        const n = h.face.normal;
+        const x = pos.x, y = pos.y, z = pos.z;
+        if (e.button === 0) removeBlock(x, y, z);
+        if (e.button === 2) addBlock(x + n.x, y + n.y, z + n.z);
       }
     }
-    document.addEventListener('mousedown',interact);
-    document.addEventListener('contextmenu',e=>e.preventDefault());
+    document.addEventListener('mousedown', interact);
+    document.addEventListener('contextmenu', e => e.preventDefault());
 
     // Movement
-    const vel=new THREE.Vector3(), dir=new THREE.Vector3();
-    const move={fw:false,back:false,left:false,right:false};
-    ['KeyW','KeyS','KeyA','KeyD'].forEach(keyCode=>
-      document.addEventListener('keydown',e=>{if(e.code===keyCode)move[{KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'}[e.code]]=true});
-    );
-    ['KeyW','KeyS','KeyA','KeyD'].forEach(keyCode=>
-      document.addEventListener('keyup',e=>{if(e.code===keyCode)move[{KeyW:'fw',KeyS:'back',KeyA:'left',KeyD:'right'}[e.code]]=false});
-    );
+    const vel = new THREE.Vector3();
+    const dir = new THREE.Vector3();
+    const move = { fw: false, back: false, left: false, right: false };
+    const keyMap = { KeyW: 'fw', KeyS: 'back', KeyA: 'left', KeyD: 'right' };
+    ['KeyW', 'KeyS', 'KeyA', 'KeyD'].forEach(keyCode => {
+      document.addEventListener('keydown', e => {
+        if (e.code === keyCode) move[keyMap[e.code]] = true;
+      });
+      document.addEventListener('keyup', e => {
+        if (e.code === keyCode) move[keyMap[e.code]] = false;
+      });
+    });
 
     // Pickaxe
-    const pick=new THREE.Group();
-    const hGeo=new THREE.BoxBufferGeometry(0.1,1,0.1);
-    const hMat=new THREE.MeshLambertMaterial({color:0x8B4513});
-    const hMesh=new THREE.Mesh(hGeo,hMat);
-    hMesh.position.set(0,-0.5,0);
+    const pick = new THREE.Group();
+    const hGeo = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+    const hMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    const hMesh = new THREE.Mesh(hGeo, hMat);
+    hMesh.position.set(0, -0.5, 0);
     pick.add(hMesh);
-    const hdGeo=new THREE.BoxBufferGeometry(0.6,0.1,0.1);
-    const hdMat=new THREE.MeshLambertMaterial({color:0xcccccc});
-    const hdMesh=new THREE.Mesh(hdGeo,hdMat);
-    hdMesh.position.set(0,-1,0);
-    hdMesh.rotateZ(Math.PI/2);
+    const hdGeo = new THREE.BoxBufferGeometry(0.6, 0.1, 0.1);
+    const hdMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+    const hdMesh = new THREE.Mesh(hdGeo, hdMat);
+    hdMesh.position.set(0, -1, 0);
+    hdMesh.rotateZ(Math.PI / 2);
     pick.add(hdMesh);
     scene.add(pick);
 
-    camera.position.set(0,H+2,0);
-    function animate(){
+    camera.position.set(0, H + 2, 0);
+    function animate() {
       requestAnimationFrame(animate);
-      if(controls.isLocked){
-        vel.x-=vel.x*10*0.016;
-        vel.z-=vel.z*10*0.016;
-        dir.z=(move.fw?1:0)-(move.back?1:0);
-        dir.x=(move.right?1:0)-(move.left?1:0);
+      if (controls.isLocked) {
+        vel.x -= vel.x * 10 * 0.016;
+        vel.z -= vel.z * 10 * 0.016;
+        dir.z = (move.fw ? 1 : 0) - (move.back ? 1 : 0);
+        dir.x = (move.right ? 1 : 0) - (move.left ? 1 : 0);
         dir.normalize();
-        if(move.fw||move.back) vel.z-=dir.z*400*0.016;
-        if(move.left||move.right)vel.x-=dir.x*400*0.016;
-        controls.moveRight(-vel.x*0.016);
-        controls.moveForward(-vel.z*0.016);
+        if (move.fw || move.back) vel.z -= dir.z * 400 * 0.016;
+        if (move.left || move.right) vel.x -= dir.x * 400 * 0.016;
+        controls.moveRight(-vel.x * 0.016);
+        controls.moveForward(-vel.z * 0.016);
       }
       pick.position.copy(camera.position);
       pick.quaternion.copy(camera.quaternion);
       pick.translateX(0.5);
       pick.translateY(-0.5);
       pick.translateZ(-1);
-      renderer.render(scene,camera);
+      renderer.render(scene, camera);
     }
     animate();
 
-    window.addEventListener('resize',()=>{
-      camera.aspect=window.innerWidth/window.innerHeight;
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth,window.innerHeight);
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
 </body>
